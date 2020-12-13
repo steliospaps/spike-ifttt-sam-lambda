@@ -1,6 +1,8 @@
 import json
 import os
 import boto3
+from boto3.dynamodb.conditions import Attr
+from botocore.exceptions import ClientError
 
 # import requests
 
@@ -12,7 +14,7 @@ def iftttError(code, error):
         http error code
     """
     return {
-            "statusCode": 200,
+            "statusCode": code,
             "body": json.dumps({
                 "errors": [
                     {
@@ -71,12 +73,19 @@ def lambda_handler(event, context):
         path=event['path']
         trigger_id=event['pathParameters']['trigger_id']
         print(f"triggerId={trigger_id}")
-    
-        response = table.delete_item(
-            Key={'triggerId':trigger_id}
-        )
-        
-        print("response ",response)
+
+        try:
+            #see https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/dynamodb.html#DynamoDB.Table.delete_item
+            response = table.delete_item(
+                Key={'triggerId':trigger_id},
+                ConditionExpression=Attr('triggerId').eq(trigger_id),
+            )
+        except ClientError as e:
+            print(f"clientError={e}")
+            if e.response['Error']['Code']=='ConditionalCheckFailedException':
+                return iftttError(404,"item not found")
+            raise
+        print(f"response={response}")
         return {
             "statusCode": 200,
             "body":"",
@@ -84,29 +93,61 @@ def lambda_handler(event, context):
         
     elif method == "POST":
         body=json.loads(event['body'])
-        triggerId=body['trigger_identity']
-        print(f"triggerId={triggerId}")
-        
-        response = table.put_item(
-            Item={
-                'triggerId': triggerId,
-                'epic': body['triggerFields']['epic'],
-            }
-        )
+        trigger_id=body['trigger_identity']
+        print(f"triggerId={trigger_id}")
 
-        triggered={
-            'instrument_name':"someName",
-            'price':'10000',
-            'instrument':'epic',
-            "meta": {
-                "id": "14b9-1fd2-acaa-5df5",
-                "timestamp": 1383597267
-            }
-        }
+        response = table.get_item(
+            Key={'triggerId':trigger_id},
+            ProjectionExpression="triggerEvents,lastTriggerEventSentSeqNo"
+        )
+        print(f"response={response}")
+
+        if "Item" not in response:
+            #brand new 
+            print(f"inserting {trigger_id}")
+            if 'triggerFields' not in body:
+                return iftttError(400, "triggerFields missing from request")
+            triggerFields=body['triggerFields']
+            #todo validate trigger fields
+            response = table.put_item(
+                Item={
+                    'triggerId': trigger_id,
+                    #hacky string way to avoid having multiple columns
+                    'triggerFields': json.dumps(triggerFields),
+                },
+            )
+            print("response ",response)
+            triggered=[]
+        else:
+            item=response['Item']
+            print(f"found {item} ")
+            #hacky string way to avoid having multiple columns
+            #TODO: change this to a se Map? (will allow to add without overwrite)
+            events = json.loads(item.get("triggerEvents","[]"))
+            lastSent = item.get("lastTriggerEventSentSeqNo",None)
+            triggered= []
+            lastSentNow=None
+            for event in events:
+                if lastSent is None or event['seqNo']>lastSent:
+                    triggered.append(event['data'])
+                    lastSentNow=event['seqNo']
+            if lastSentNow is not None:
+                print(f"putting lastTriggerEventSentSeqNo={lastSentNow}")
+                table.update_item(
+                    Key={
+                        'triggerId': trigger_id,
+                    },
+                    AttributeUpdates={
+                        'lastTriggerEventSentSeqNo': {
+                            'Value': lastSentNow,
+                            'Action': 'PUT'
+                        }
+                    },
+                )
         return {
             "statusCode": 200,
             "body": json.dumps({
-                "data": [triggered],
+                "data": triggered,
                 # "location": ip.text.replace("\n", "")
             }),
         }

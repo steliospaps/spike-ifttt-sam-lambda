@@ -129,8 +129,8 @@ see
 
 ```
 #run in background
-#docker-compose -d up
-docker run -p 8000:8000 amazon/dynamodb-local
+docker-compose -d up
+
 
 aws --profile=fake dynamodb list-tables --endpoint-url http://localhost:8000
 
@@ -138,9 +138,24 @@ AWS_PROFILE=fake ./dynamodb/create-local-table.sh
 
 aws --profile=fake dynamodb  --endpoint-url http://localhost:8000 scan --table=TriggersTable
 
+#add response
+aws --endpoint-url http://localhost:8000 --profile=fake dynamodb update-item --table-name TriggersTable \
+  --key=92429d82a41e93048
+  --item '{
+    "triggerId":{"S":"92429d82a41e93048"},
+    "triggerEvents":{"S":"[{\"seqNo\": 1,\"data\": {\"instrument_name\":\"someName\",\"price\":\"10000\",\"instrument\":\"epic\",\"meta\": {\"id\": \"14b9-1fd2-acaa-5df5\",\"timestamp\": 1383597267}}}]"}
+  }'
+
+aws --endpoint-url http://localhost:8000 --profile=fake dynamodb update-item --table-name TriggersTable \
+  --key '{"triggerId":{"S":"92429d82a41e93048"}}' \
+  --update-expression 'SET triggerEvents = {"S":"[{\"seqNo\": 1,\"data\": {\"instrument_name\":\"someName\",\"price\":\"10000\",\"instrument\":\"epic\",\"meta\": {\"id\": \"14b9-1fd2-acaa-5df5\",\"timestamp\": 1383597267}}}]"}'
+
+
 #local-sam defined in docker compose
-sam local start-api 
+sam local start-api --docker-network=local-sam
 ```
 
 # cleanup 
-docker-compose down --volumes
+```
+doc ker-compose down --volumes
+```
