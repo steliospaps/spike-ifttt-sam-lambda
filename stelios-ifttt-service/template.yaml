@@ -27,7 +27,7 @@ Resources:
       ProvisionedThroughput: 
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
-      TableName: "Stelios-EpicPriceAlert"
+      TableName: !Sub "${AWS::StackName}-Stelios-EpicPriceAlert"
       Tags:
         Owner: Stelios
   StatusFunction:
@@ -47,6 +47,10 @@ Resources:
       CodeUri: instrument_price/
       Handler: app.lambda_handler
       #TODO: make this more specific Policies: AmazonDynamoDBFullAccess # default IAM policy that allows the lambda to read and write to our soon to be defined Dynamo instance
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName:
+              !Ref TriggersTable
       Events:
         poll:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
@@ -63,12 +67,24 @@ Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  HelloWorldApi:
-    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
-  HelloWorldFunction:
-    Description: "Hello World Lambda Function ARN"
-    Value: !GetAtt HelloWorldFunction.Arn
-  HelloWorldFunctionIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
-    Value: !GetAtt HelloWorldFunctionRole.Arn
+  Api:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+  TriggersTable:
+    Description: "dynamoDb ARN"
+    Value: !GetAtt TriggersTable.Arn
+  TriggersTable:
+    Description: "dynamoDb name"
+    Value: !Ref TriggersTable
+  StatusFunction:
+    Description: "statusFunction ARN"
+    Value: !GetAtt StatusFunction.Arn
+  StatusFunctionIamRole:
+    Description: "Implicit IAM Role created for StatusFunction"
+    Value: !GetAtt StatusFunctionRole.Arn
+  TriggerFunction:
+    Description: "TriggerFunction ARN"
+    Value: !GetAtt TriggerFunction.Arn
+  TriggerFunctionIamRole:
+    Description: "Implicit IAM Role created for TriggerFunction"
+    Value: !GetAtt TriggerFunctionRole.Arn
