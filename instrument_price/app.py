@@ -1,4 +1,6 @@
 import json
+import os
+import boto3
 
 # import requests
 
@@ -51,20 +53,47 @@ def lambda_handler(event, context):
     print(event)
     method=event['httpMethod']
     print(f"method={method}")
+    table_name = os.environ['DYNAMO_TABLE']
+    print(f"table_name={table_name}")
+    
+    #print(os.environ)
+    if(os.environ.get('AWS_SAM_LOCAL','false') == 'true'):
+        # the endpoint has to match the name from docker ps
+        # of an image running in the docker-network supplied to start-api
+        print(f"local connect to table='{table_name}'")
+        table=boto3.resource('dynamodb',endpoint_url="http://dynamodb-local:8000/").Table(table_name)
+    else:
+        print(f"normal connect to table='{table_name}'")
+        table=boto3.resource('dynamodb').Table(table_name)
+
     
     if method == "DELETE":
         path=event['path']
-        trigger_id=event['pathParameters']['proxy']
+        trigger_id=event['pathParameters']['trigger_id']
         print(f"triggerId={trigger_id}")
+    
+        response = table.delete_item(
+            Key={'triggerId':trigger_id}
+        )
+        
+        print("response ",response)
         return {
             "statusCode": 200,
             "body":"",
         }
+        
     elif method == "POST":
         body=json.loads(event['body'])
         triggerId=body['trigger_identity']
         print(f"triggerId={triggerId}")
         
+        response = table.put_item(
+            Item={
+                'triggerId': triggerId,
+                'epic': body['triggerFields']['epic'],
+            }
+        )
+
         triggered={
             'instrument_name':"someName",
             'price':'10000',

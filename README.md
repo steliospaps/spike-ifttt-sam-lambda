@@ -117,3 +117,30 @@ aws cloudformation delete-stack --stack-name stelios-ifttt-service
 See the [AWS SAM developer guide](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html) for an introduction to SAM specification, the SAM CLI, and serverless application concepts.
 
 Next, you can use AWS Serverless Application Repository to deploy ready to use Apps that go beyond hello world samples and learn how authors developed their applications: [AWS Serverless Application Repository main page](https://aws.amazon.com/serverless/serverlessrepo/)
+
+# dev
+
+## dynamo db locally
+see 
+- https://github.com/ganshan/sam-dynamodb-local
+- https://github.com/lvthillo/aws-lambda-sam-demo, 
+- https://stackoverflow.com/questions/48926260/connecting-aws-sam-local-with-dynamodb-in-docker
+  https://github.com/rynop/abp-sam-nestjs
+
+```
+#run in background
+#docker-compose -d up
+docker run -p 8000:8000 amazon/dynamodb-local
+
+aws --profile=fake dynamodb list-tables --endpoint-url http://localhost:8000
+
+AWS_PROFILE=fake ./dynamodb/create-local-table.sh
+
+aws --profile=fake dynamodb  --endpoint-url http://localhost:8000 scan --table=TriggersTable
+
+#local-sam defined in docker compose
+sam local start-api 
+```
+
+# cleanup 
+docker-compose down --volumes
