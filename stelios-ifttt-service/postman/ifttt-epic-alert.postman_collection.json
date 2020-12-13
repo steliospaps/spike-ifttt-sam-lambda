@@ -1,0 +1,127 @@
+{
+	"info": {
+		"_postman_id": "8ad4fb88-cda7-4db9-b97c-da8bfcb06d22",
+		"name": "ifttt-epic-alert",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "status",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{ifttt}}/ifttt/v1/status",
+					"host": [
+						"{{ifttt}}"
+					],
+					"path": [
+						"ifttt",
+						"v1",
+						"status"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "triggers/instrument_price",
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"content-type": true
+				}
+			},
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"trigger_identity\": \"{{triggerIdentity}}\",\n  \"triggerFields\": {\n    \"epic\": \"epic1\",\n    \"direction\": \"OVER\",\n    \"price\":\"10,000.00\"\n  },\n  \"limit\": 10,\n  \"ifttt_source\": {\n    \"id\": \"2\",\n    \"url\": \"https://ifttt.com/myrecipes/personal/2\"\n  },\n  \"user\": {\n    \"timezone\": \"America/Los_Angeles\"\n  }\n}"
+				},
+				"url": {
+					"raw": "{{ifttt}}/ifttt/v1/triggers/instrument_price",
+					"host": [
+						"{{ifttt}}"
+					],
+					"path": [
+						"ifttt",
+						"v1",
+						"triggers",
+						"instrument_price"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "triggers/instrument_price Copy",
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"content-type": true
+				}
+			},
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{ifttt}}/ifttt/v1/triggers/instrument_price/trigger_identity/{{triggerIdentity}}",
+					"host": [
+						"{{ifttt}}"
+					],
+					"path": [
+						"ifttt",
+						"v1",
+						"triggers",
+						"instrument_price",
+						"trigger_identity",
+						"{{triggerIdentity}}"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "5dc20f62-f6d4-4a58-bad5-2fb9f92fda20",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "332b1024-fef5-4c1e-8331-2fb5e3f6c36b",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"id": "0ef03c1b-1aa6-49d0-aff1-ad6186e6756d",
+			"key": "dev",
+			"value": "http://localhost:3000",
+			"disabled": true
+		}
+	],
+	"protocolProfileBehavior": {}
+}
