@@ -158,5 +158,5 @@ sam local start-api --docker-network=local-sam
 
 # cleanup 
 ```
-doc ker-compose down --volumes
+docker-compose down --volumes
 ```
