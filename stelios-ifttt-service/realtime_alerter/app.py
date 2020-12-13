@@ -1,6 +1,7 @@
 import json
+import os
 
-# import requests
+import requests
 
 
 def lambda_handler(event, context):
@@ -33,10 +34,8 @@ def lambda_handler(event, context):
 
     #     raise e
 
-    return {
-        "statusCode": 200,
-        "body": json.dumps({
-            "message": "hello world",
-            # "location": ip.text.replace("\n", "")
-        }),
-    }
+    
+    print("env=",os.environ)
+
+    print("event=",event)
+

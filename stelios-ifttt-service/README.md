@@ -139,12 +139,6 @@ AWS_PROFILE=fake ./dynamodb/create-local-table.sh
 aws --profile=fake dynamodb  --endpoint-url http://localhost:8000 scan --table=TriggersTable
 
 #add response
-aws --endpoint-url http://localhost:8000 --profile=fake dynamodb update-item --table-name TriggersTable \
-  --key=92429d82a41e93048
-  --item '{
-    "triggerId":{"S":"92429d82a41e93048"},
-    "triggerEvents":{"S":"[{\"seqNo\": 1,\"data\": {\"instrument_name\":\"someName\",\"price\":\"10000\",\"instrument\":\"epic\",\"meta\": {\"id\": \"14b9-1fd2-acaa-5df5\",\"timestamp\": 1383597267}}}]"}
-  }'
 
 aws --endpoint-url http://localhost:8000 --profile=fake dynamodb update-item --table-name TriggersTable \
   --key '{"triggerId":{"S":"92429d82a41e93048"}}' \

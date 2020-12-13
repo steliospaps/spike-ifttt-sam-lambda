@@ -23,6 +23,8 @@ def iftttError(code, error):
                 ],
             }),
         }
+
+
 def lambda_handler(event, context):
     """Sample pure Lambda function
 
@@ -58,7 +60,7 @@ def lambda_handler(event, context):
     table_name = os.environ['DYNAMO_TABLE']
     print(f"table_name={table_name}")
     
-    #print(os.environ)
+    print(os.environ)
     if(os.environ.get('AWS_SAM_LOCAL','false') == 'true'):
         # the endpoint has to match the name from docker ps
         # of an image running in the docker-network supplied to start-api

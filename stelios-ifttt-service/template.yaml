@@ -11,25 +11,36 @@ Description: >
 Globals:
   Function:
     Runtime: python3.8
-    Timeout: 30
+    Timeout: 3
     Environment:
         Variables: # these will be important later
             DYNAMO_TABLE: !Ref TriggersTable
+            API_KEY: !Ref ApiKey
             #DB_ENDPOINT: http://dynamodb.us-east-1.amazonaws.com
             #REGION_NAME: us-east-1
+
+Parameters:
+  ApiKey: 
+    #todo this should come from secrets manager?
+    Type: String
+    Default: dummy-api-key
+
 Resources:
   TriggersTable:
-    Type: AWS::Serverless::SimpleTable
+    Type: AWS::DynamoDB::Table
     Properties:
-      PrimaryKey: 
-        Name: triggerId
-        Type: String
+      AttributeDefinitions: 
+        - AttributeName: triggerId
+          AttributeType: S
+      KeySchema: 
+        - AttributeName: triggerId
+          KeyType: HASH
       ProvisionedThroughput: 
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES #NEW_IMAGE | OLD_IMAGE | NEW_AND_OLD_IMAGES | KEYS_ONLY  
       TableName: !Sub "${AWS::StackName}-Stelios-EpicPriceAlert"
-      Tags:
-        Owner: Stelios
   StatusFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -62,6 +73,24 @@ Resources:
           Properties:
             Path: /ifttt/v1/triggers/instrument_price/trigger_identity/{trigger_id}
             Method: delete
+  RealTimeAlerterFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: realtime_alerter/
+      Handler: app.lambda_handler
+      Policies: AWSLambdaDynamoDBExecutionRole
+      Events:
+        Stream:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt TriggersTable.StreamArn
+            BatchSize: 100
+            MaximumBatchingWindowInSeconds: 10
+            BisectBatchOnFunctionError: true
+            MaximumRetryAttempts: 10
+            MaximumRecordAgeInSeconds: 600
+            StartingPosition: TRIM_HORIZON #TRIM_HORIZON | LATEST
+
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
@@ -88,3 +117,9 @@ Outputs:
   TriggerFunctionIamRole:
     Description: "Implicit IAM Role created for TriggerFunction"
     Value: !GetAtt TriggerFunctionRole.Arn
+  RealTimeAlerterFunction:
+    Description: "RealTimeAlerterFunction ARN"
+    Value: !GetAtt RealTimeAlerterFunction.Arn
+  RealTimeAlerterFunctionIamRole:
+    Description: "Implicit IAM Role created for RealTimeAlerterFunction"
+    Value: !GetAtt RealTimeAlerterFunctionRole.Arn
