@@ -59,8 +59,17 @@ def lambda_handler(event, context):
     print(f"method={method}")
     table_name = os.environ['DYNAMO_TABLE']
     print(f"table_name={table_name}")
-    
-    print(os.environ)
+    api_key=os.environ['API_KEY'] # header IFTTT-Service-Key
+    token = event['headers'].get("Ifttt-Service-Key","")
+    ##poor man's auth
+    if token!=api_key:
+        print(f"'{api_key}'!='{token}'")
+        return {
+            "statusCode": 401,
+            "body":'{"errors":[{"message":"invalid token"}]}',
+        }
+
+    #print(os.environ)
     if(os.environ.get('AWS_SAM_LOCAL','false') == 'true'):
         # the endpoint has to match the name from docker ps
         # of an image running in the docker-network supplied to start-api
@@ -130,6 +139,7 @@ def lambda_handler(event, context):
             triggered= []
             lastSentNow=None
             for event in events:
+                #TODO: implement limit (not needed now becasue I expect only up to one events)
                 if lastSent is None or event['seqNo']>lastSent:
                     triggered.append(event['data'])
                     lastSentNow=event['seqNo']

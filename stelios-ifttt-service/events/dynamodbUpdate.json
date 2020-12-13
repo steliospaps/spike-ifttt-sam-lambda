@@ -1,1 +1,42 @@
-{'Records': [{'eventID': '6e85f7d69a0111334751950f6bfe9325', 'eventName': 'MODIFY', 'eventVersion': '1.1', 'eventSource': 'aws:dynamodb', 'awsRegion': 'eu-west-2', 'dynamodb': {'ApproximateCreationDateTime': 1607887282.0, 'Keys': {'triggerId': {'S': '92429d82a41e93048'}}, 'NewImage': {'triggerFields': {'S': '{"epic": "epic1", "direction": "OVER", "price": "10,000.00"}'}, 'triggerEvents': {'S': '[{"seqNo": 15,"data": {"instrument_name":"someName","price":"10000","instrument":"epic","meta": {"id": "14b9-1fd2-acaa-5df5","timestamp": 1383597267}}}]'}, 'triggerId': {'S': '92429d82a41e93048'}}, 'OldImage': {'triggerFields': {'S': '{"epic": "epic1", "direction": "OVER", "price": "10,000.00"}'}, 'triggerId': {'S': '92429d82a41e93048'}}, 'SequenceNumber': '22300000000008668729887', 'SizeBytes': 389, 'StreamViewType': 'NEW_AND_OLD_IMAGES'}, 'eventSourceARN': 'arn:aws:dynamodb:eu-west-2:834656303304:table/SteliosTest-Stelios-EpicPriceAlert/stream/2020-12-13T19:17:12.903'}]}
+{
+  "Records": [
+    {
+      "eventID": "6e85f7d69a0111334751950f6bfe9325",
+      "eventName": "MODIFY",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "eu-west-2",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1607887282,
+        "Keys": {
+          "triggerId": {
+            "S": "92429d82a41e93048"
+          }
+        },
+        "NewImage": {
+          "triggerFields": {
+            "S": "{\"epic\": \"epic1\", \"direction\": \"OVER\", \"price\": \"10,000.00\"}"
+          },
+          "triggerEvents": {
+            "S": "[{\"seqNo\": 15,\"data\": {\"instrument_name\":\"someName\",\"price\":\"10000\",\"instrument\":\"epic\",\"meta\": {\"id\": \"14b9-1fd2-acaa-5df5\",\"timestamp\": 1383597267}}}]"
+          },
+          "triggerId": {
+            "S": "92429d82a41e93048"
+          }
+        },
+        "OldImage": {
+          "triggerFields": {
+            "S": "{\"epic\": \"epic1\", \"direction\": \"OVER\", \"price\": \"10,000.00\"}"
+          },
+          "triggerId": {
+            "S": "92429d82a41e93048"
+          }
+        },
+        "SequenceNumber": "22300000000008668729887",
+        "SizeBytes": 389,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "eventSourceARN": "arn:aws:dynamodb:eu-west-2:834656303304:table/SteliosTest-Stelios-EpicPriceAlert/stream/2020-12-13T19:17:12.903"
+    }
+  ]
+}

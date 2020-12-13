@@ -43,7 +43,19 @@ def lambda_handler(event, context):
             "statusCode": 401,
             "body":'{"errors":[{"message":"invalid token"}]}',
         }
-        
     return {
         "statusCode": 200,
+        "body":json.dumps({
+            "data": {
+                "samples": {
+                    "triggers": {
+                        "instrument_price":{
+                            "epic": "epic1",
+                            "direction": "OVER",
+                            "price":"10,000.00"
+                        }
+                    }
+                }
+            }
+        })
     }

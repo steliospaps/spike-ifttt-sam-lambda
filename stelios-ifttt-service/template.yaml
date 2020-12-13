@@ -52,6 +52,17 @@ Resources:
           Properties:
             Path: /ifttt/v1/status
             Method: get
+  TestSetupFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: test_setup/
+      Handler: app.lambda_handler
+      Events:
+        status:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /ifttt/v1/test/setup
+            Method: post
   TriggerFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -102,24 +113,24 @@ Outputs:
   TriggersTable:
     Description: "dynamoDb ARN"
     Value: !GetAtt TriggersTable.Arn
-  TriggersTable:
-    Description: "dynamoDb name"
-    Value: !Ref TriggersTable
-  StatusFunction:
-    Description: "statusFunction ARN"
-    Value: !GetAtt StatusFunction.Arn
-  StatusFunctionIamRole:
-    Description: "Implicit IAM Role created for StatusFunction"
-    Value: !GetAtt StatusFunctionRole.Arn
-  TriggerFunction:
-    Description: "TriggerFunction ARN"
-    Value: !GetAtt TriggerFunction.Arn
-  TriggerFunctionIamRole:
-    Description: "Implicit IAM Role created for TriggerFunction"
-    Value: !GetAtt TriggerFunctionRole.Arn
-  RealTimeAlerterFunction:
-    Description: "RealTimeAlerterFunction ARN"
-    Value: !GetAtt RealTimeAlerterFunction.Arn
-  RealTimeAlerterFunctionIamRole:
-    Description: "Implicit IAM Role created for RealTimeAlerterFunction"
-    Value: !GetAtt RealTimeAlerterFunctionRole.Arn
+#  TriggersTable:
+#    Description: "dynamoDb name"
+#    Value: !Ref TriggersTable
+#  StatusFunction:
+#    Description: "statusFunction ARN"
+#    Value: !GetAtt StatusFunction.Arn
+#  StatusFunctionIamRole:
+#    Description: "Implicit IAM Role created for StatusFunction"
+#    Value: !GetAtt StatusFunctionRole.Arn
+#  TriggerFunction:
+#    Description: "TriggerFunction ARN"
+#    Value: !GetAtt TriggerFunction.Arn
+#  TriggerFunctionIamRole:
+#    Description: "Implicit IAM Role created for TriggerFunction"
+#    Value: !GetAtt TriggerFunctionRole.Arn
+#  RealTimeAlerterFunction:
+#    Description: "RealTimeAlerterFunction ARN"
+#    Value: !GetAtt RealTimeAlerterFunction.Arn
+#  RealTimeAlerterFunctionIamRole:
+#    Description: "Implicit IAM Role created for RealTimeAlerterFunction"
+#    Value: !GetAtt RealTimeAlerterFunctionRole.Arn

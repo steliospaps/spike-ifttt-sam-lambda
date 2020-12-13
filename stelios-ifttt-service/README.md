@@ -150,7 +150,17 @@ aws --endpoint-url http://localhost:8000 --profile=fake dynamodb update-item --t
 sam local start-api --docker-network=local-sam
 ```
 
+## test realtime alert
+```
+sam local invoke RealTimeAlerterFunction --event events/dynamodbUpdate.json
+```
 # cleanup 
 ```
 docker-compose down --volumes
+```
+
+# deploy
+TODO: get the key from a secrets manager
+```
+sam build && AWS_PROFILE=fake sam deploy --parameter-overrides 'ApiKey=XXXXX'
 ```
