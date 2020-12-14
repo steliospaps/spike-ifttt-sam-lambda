@@ -99,7 +99,7 @@ Resources:
           Properties:
             Stream: !GetAtt TriggersTable.StreamArn
             BatchSize: 100
-            MaximumBatchingWindowInSeconds: 10
+            MaximumBatchingWindowInSeconds: 1
             BisectBatchOnFunctionError: true
             MaximumRetryAttempts: 10
             MaximumRecordAgeInSeconds: 600

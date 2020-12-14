@@ -162,7 +162,7 @@ docker-compose down --volumes
 # deploy
 TODO: get the key from a secrets manager
 ```
-sam build && AWS_PROFILE=fake sam deploy --parameter-overrides 'ApiKey=XXXXX'
+sam build && AWS_PROFILE=ighackathon sam deploy --parameter-overrides 'ApiKey=XXXXX'
 ```
 ## cloud logs/demo
 ```
@@ -181,5 +181,5 @@ logs:
 ```
 AWS_PROFILE=ighackathon sam logs  --name RealTimeAlerterFunction --stack-name SteliosTest --tail
 
-AWS_PROFILE=ighackathon sam logs  --name RealTimeAlerterFunction --stack-name SteliosTest --tail
+AWS_PROFILE=ighackathon sam logs  --name TriggerFunction --stack-name SteliosTest --tail
 ```

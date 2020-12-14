@@ -142,10 +142,10 @@ def lambda_handler(event, context):
             lastSentNow=None
             for event in events:
                 #TODO: implement limit (not needed now becasue I expect only up to one events)
-                if not do_not_resend or (lastSent is None or event['seqNo']>lastSent):
+                if (not do_not_resend) or (lastSent is None or event['seqNo']>lastSent):
                     triggered.append(event['data'])
                     lastSentNow=event['seqNo']
-            if lastSentNow is not None:
+            if do_not_resend and (lastSentNow is not None):
                 print(f"putting lastTriggerEventSentSeqNo={lastSentNow}")
                 table.update_item(
                     Key={
