@@ -60,19 +60,22 @@ def lambda_handler(event, context):
         else:
             print(f"ignoring event_id={event_id} because it is not MODIFY")
 
-    #print(f"will alert trigger_id={trigger_id} event_id={event_id} api_key={api_key}");
-    #IFTTT-Service-Key: WlWFGKXFsXBaFMt8yZ7aLOafdqo7mAhY
-    #https://realtime.ifttt.com/v1/notifications
-    body={"data":toSend}
-    if is_local:
-        print(f"would have sent alert trigger_id={body} event_id={event_id} api_key={api_key}")
+    if len(toSend)>0:
+        #print(f"will alert trigger_id={trigger_id} event_id={event_id} api_key={api_key}");
+        #IFTTT-Service-Key: WlWFGKXFsXBaFMt8yZ7aLOafdqo7mAhY
+        #https://realtime.ifttt.com/v1/notifications
+        body={"data":toSend}
+        if is_local:
+            print(f"would have sent alert trigger_id={body} event_id={event_id} api_key={api_key}")
+        else:
+            print(f"sending alert trigger_id={body} event_id={event_id} api_key={api_key}")
+            res = requests.post(url="https://realtime.ifttt.com/v1/notifications",
+            data=body,
+            headers={
+                'IFTTT-Service-Key': api_key,
+                'Content-Type': 'application/json',
+                'X-Request-ID': event_id,
+            })
+            print(f"result={res}")
     else:
-        print(f"sending alert trigger_id={body} event_id={event_id} api_key={api_key}")
-        res = requests.post(url="https://realtime.ifttt.com/v1/notifications",
-        data=body,
-        headers={
-            'IFTTT-Service-Key': api_key,
-            'Content-Type': 'application/json',
-            'X-Request-ID': event_id,
-        })
-        print(f"result={res}")
+        print("nothing to send")
