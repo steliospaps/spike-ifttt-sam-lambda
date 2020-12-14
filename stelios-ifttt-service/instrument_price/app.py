@@ -60,6 +60,8 @@ def lambda_handler(event, context):
     table_name = os.environ['DYNAMO_TABLE']
     print(f"table_name={table_name}")
     api_key=os.environ['API_KEY'] # header IFTTT-Service-Key
+    do_not_resend = os.environ.get("DO_NOT_RESEND","").lower() == "true"
+    print(f"do_not_resend={do_not_resend}")
     token = event['headers'].get("Ifttt-Service-Key","")
     ##poor man's auth
     if token!=api_key:
@@ -81,7 +83,7 @@ def lambda_handler(event, context):
 
     
     if method == "DELETE":
-        path=event['path']
+        #path=event['path']
         trigger_id=event['pathParameters']['trigger_id']
         print(f"triggerId={trigger_id}")
 
@@ -140,7 +142,7 @@ def lambda_handler(event, context):
             lastSentNow=None
             for event in events:
                 #TODO: implement limit (not needed now becasue I expect only up to one events)
-                if lastSent is None or event['seqNo']>lastSent:
+                if not do_not_resend or (lastSent is None or event['seqNo']>lastSent):
                     triggered.append(event['data'])
                     lastSentNow=event['seqNo']
             if lastSentNow is not None:
