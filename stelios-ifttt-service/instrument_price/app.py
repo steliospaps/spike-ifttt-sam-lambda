@@ -8,6 +8,8 @@ from botocore.exceptions import ClientError
 
 # import requests
 
+patch_all()
+
 def iftttError(code, error):
     """lambda response on error
     Parameters

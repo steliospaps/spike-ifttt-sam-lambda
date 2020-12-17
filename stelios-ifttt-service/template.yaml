@@ -75,8 +75,6 @@ Resources:
               !Ref TriggersTable
         - AWSXrayWriteOnlyAccess
       Tracing: Active
-      Layers:
-        - !Ref libs
       Environment:
         Variables:
           DO_NOT_RESEND: false #true|false if true will not resend something twice
@@ -108,14 +106,14 @@ Resources:
             MaximumRetryAttempts: 10
             MaximumRecordAgeInSeconds: 600
             StartingPosition: TRIM_HORIZON #TRIM_HORIZON | LATEST
-  libs:
-    Type: AWS::Serverless::LayerVersion
-    Properties:
-      LayerName: blank-python3-lib
-      Description: Dependencies for the app.
-      ContentUri: libs/.
-      CompatibleRuntimes:
-        - python3.8
+#  libs:
+#    Type: AWS::Serverless::LayerVersion
+#    Properties:
+#      LayerName: blank-python3-lib
+#      Description: Dependencies for the app.
+#      ContentUri: package/.
+#      CompatibleRuntimes:
+#        - python3.8
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
