@@ -1,6 +1,8 @@
 import json
 import os
 import boto3
+from aws_xray_sdk.core import xray_recorder
+from aws_xray_sdk.core import patch_all
 from boto3.dynamodb.conditions import Attr
 from botocore.exceptions import ClientError
 
