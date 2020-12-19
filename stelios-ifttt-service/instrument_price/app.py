@@ -1,14 +1,14 @@
 import json
 import os
 import boto3
-#from aws_xray_sdk.core import xray_recorder
-#from aws_xray_sdk.core import patch_all
+from aws_xray_sdk.core import xray_recorder
+from aws_xray_sdk.core import patch_all
 from boto3.dynamodb.conditions import Attr
 from botocore.exceptions import ClientError
-
+from requests.structures import CaseInsensitiveDict
 # import requests
 
-#patch_all()
+patch_all()
 
 def iftttError(code, error):
     """lambda response on error
@@ -66,7 +66,7 @@ def lambda_handler(event, context):
     api_key=os.environ['API_KEY'] # header IFTTT-Service-Key
     do_not_resend = os.environ.get("DO_NOT_RESEND","").lower() == "true"
     print(f"do_not_resend={do_not_resend}")
-    token = event['headers'].get("Ifttt-Service-Key","")
+    token = CaseInsensitiveDict(event['headers']).get("IFTTT-Service-Key","")
     ##poor man's auth
     if token!=api_key:
         print(f"'{api_key}'!='{token}'")

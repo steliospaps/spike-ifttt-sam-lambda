@@ -2,7 +2,7 @@ import json
 import os
 
 # import requests
-
+from requests.structures import CaseInsensitiveDict
 
 def lambda_handler(event, context):
     """Sample pure Lambda function
@@ -35,7 +35,7 @@ def lambda_handler(event, context):
     #     raise e
 
     api_key=os.environ['API_KEY'] # header IFTTT-Service-Key
-    token = event['headers'].get("Ifttt-Service-Key","")
+    token = CaseInsensitiveDict(event['headers']).get("IFTTT-Service-Key","")
     ##poor man's auth
     if token!=api_key:
         print(f"'{api_key}'!='{token}'")

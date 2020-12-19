@@ -162,7 +162,10 @@ TODO: get the key from a secrets manager
 make build && AWS_PROFILE=ighackathon sam deploy --parameter-overrides 'ApiKey=XXXXX'
 #or (using default account ighackathon)
 make deploy API_KEY=XXXX 
-#or make deploy API_KEY=XXXX AWS_PROFILE=ighackathon
+#or 
+make deploy API_KEY=XXXX AWS_PROFILE=ighackathon
+#or 
+make build deploy API_KEY=XXXX AWS_PROFILE=ighackathon
 ```
 ## cloud logs/demo
 ```

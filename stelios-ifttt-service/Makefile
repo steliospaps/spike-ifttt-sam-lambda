@@ -23,16 +23,25 @@ local-cleanup:  ## cleanup local resources (such as dynamo db)
 	docker-compose down --volumes
 	rm -f $(MARKER_LOCAL)
 
+cleanup: ## cleanup everything
+cleanup: local-cleanup
+	rm -rf ./aws-sam package
+
 local-run:      ## start api with local dynamo db
-local-run: $(MARKER_LOCAL)
-	echo removing build directory to allow live editing
-	rm -rf .aws-sam
+local-run: $(MARKER_LOCAL) package
 	sam local start-api --docker-network=local-sam
 
-build:
+package: ## refresh pacakge dependencies
+package: realtime_alerter/requirements.txt instrument_price/requirements.txt 
+	rm -rf package
+	#TODO: make this a loop
+	cd realtime_alerter && pip install --target ../$@ -r requirements.txt
+	cd instrument_price && pip install --target ../$@ -r requirements.txt
+
+build: package
 	sam build
 
-deploy: build
+deploy:
 	test -n '$(API_KEY)' # API_KEY must be non empty
 	test -n '$(AWS_PROFILE)' # AWS_PROFILE must be non empty
 	AWS_PROFILE=$(AWS_PROFILE) sam deploy --parameter-overrides 'ApiKey=$(API_KEY)'
