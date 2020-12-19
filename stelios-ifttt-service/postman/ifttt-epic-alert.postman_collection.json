@@ -9,7 +9,13 @@
 			"name": "status",
 			"request": {
 				"method": "GET",
-				"header": [],
+				"header": [
+					{
+						"key": "IFTTT-Service-Key",
+						"value": "{{token}}",
+						"type": "text"
+					}
+				],
 				"url": {
 					"raw": "{{ifttt}}/ifttt/v1/status",
 					"host": [
@@ -19,6 +25,32 @@
 						"ifttt",
 						"v1",
 						"status"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "test/setup",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "IFTTT-Service-Key",
+						"type": "text",
+						"value": "{{token}}"
+					}
+				],
+				"url": {
+					"raw": "{{ifttt}}/ifttt/v1/test/setup",
+					"host": [
+						"{{ifttt}}"
+					],
+					"path": [
+						"ifttt",
+						"v1",
+						"test",
+						"setup"
 					]
 				}
 			},
@@ -37,6 +69,11 @@
 					{
 						"key": "Content-Type",
 						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "IFTTT-Service-Key",
+						"value": "{{token}}",
 						"type": "text"
 					}
 				],
@@ -72,6 +109,11 @@
 					{
 						"key": "Content-Type",
 						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "IFTTT-Service-Key",
+						"value": "{{token}}",
 						"type": "text"
 					}
 				],
@@ -117,7 +159,7 @@
 	],
 	"variable": [
 		{
-			"id": "0ef03c1b-1aa6-49d0-aff1-ad6186e6756d",
+			"id": "9ce32b4d-743d-4cc6-ab07-65da78407b5a",
 			"key": "dev",
 			"value": "http://localhost:3000",
 			"disabled": true
