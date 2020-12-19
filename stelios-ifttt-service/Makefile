@@ -31,3 +31,9 @@ local-run: $(MARKER_LOCAL)
 
 build:
 	sam build
+
+deploy: build
+	test -n '$(API_KEY)' # API_KEY must be non empty
+	test -n '$(AWS_PROFILE)' # AWS_PROFILE must be non empty
+	AWS_PROFILE=$(AWS_PROFILE) sam deploy --parameter-overrides 'ApiKey=$(API_KEY)'
+	
