@@ -32,11 +32,10 @@ local-run: $(MARKER_LOCAL) package
 	sam local start-api --docker-network=local-sam
 
 package: ## refresh pacakge dependencies
-package: realtime_alerter/requirements.txt instrument_price/requirements.txt 
+package: layer_package_requirements.txt
 	rm -rf package
-	#TODO: make this a loop
-	cd realtime_alerter && pip install --target ../$@ -r requirements.txt
-	cd instrument_price && pip install --target ../$@ -r requirements.txt
+	pip install --target $@/python/lib/python3.8/site-packages/ -r $^
+	
 
 build: package
 	sam build

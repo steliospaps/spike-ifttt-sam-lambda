@@ -1,2 +1,3 @@
-requests
-aws-xray-sdk==2.4.3
+# in layer_package_requirements.txt
+#requests
+#aws-xray-sdk==2.4.3
