@@ -9,7 +9,7 @@ echo creating table
 #https://stackoverflow.com/questions/37357397/how-to-create-dynamodb-global-secondary-index-using-aws-cli
 aws dynamodb create-table \
     --table-name ${TNAME} \
-    --attribute-definitions AttributeName=triggerId,AttributeType=S  \
-    --key-schema AttributeName=triggerId,KeyType=HASH \
+    --attribute-definitions AttributeName=PK,AttributeType=S  \
+    --key-schema AttributeName=PK,KeyType=HASH \
     --provisioned-throughput ReadCapacityUnits=50,WriteCapacityUnits=50 \
     --endpoint-url http://localhost:8000 >/dev/null

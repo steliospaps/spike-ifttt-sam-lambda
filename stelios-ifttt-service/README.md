@@ -129,9 +129,9 @@ see
 
 ```
 #run in background
-docker-compose -d up
+make local-run
 
-
+# use aws to manipulate the database
 aws --profile=fake dynamodb list-tables --endpoint-url http://localhost:8000
 
 AWS_PROFILE=fake ./dynamodb/create-local-table.sh
@@ -141,13 +141,10 @@ aws --profile=fake dynamodb  --endpoint-url http://localhost:8000 scan --table=T
 #add response
 
 aws --endpoint-url http://localhost:8000 --profile=fake dynamodb update-item --table-name TriggersTable \
-  --key '{"triggerId":{"S":"92429d82a41e93048"}}' \
+  --key '{"PK":{"S":"92429d82a41e93048"}}' \
   --update-expression 'SET triggerEvents = :i' \
   --expression-attribute-values file://<(echo '{ ":i" : {"S":"[{\"seqNo\": 1,\"data\": {\"instrument_name\":\"someName\",\"price\":\"10000\",\"instrument\":\"epic\",\"meta\": {\"id\": \"14b9-1fd2-acaa-5df5\",\"timestamp\": 1383597267}}}]"}}')
 
-
-#local-sam defined in docker compose
-sam local start-api --docker-network=local-sam
 ```
 
 ## test realtime alert
@@ -173,7 +170,7 @@ aws --profile=ighackathon dynamodb scan --table-name SteliosTest-Stelios-EpicPri
 insert update
 
 ```
-aws --profile=ighackathon dynamodb update-item --table-name SteliosTest-Stelios-EpicPriceAlert   --key '{"triggerId":{"S":"a1274ad5bc21ed2e02636e6bb1f8bc584ccb19f3"}}'   --update-expression 'SET triggerEvents = :i'   --expression-attribute-values file://<(echo '{ ":i" : {"S":"[{\"seqNo\": 1,\"data\": {\"instrument_name\":\"someName\",\"price\":\"10000\",\"instrument\":\"epic\",\"meta\": {\"id\": \"14b9-1fd2-acaa-5df5\",\"timestamp\": 1383597267}}}]"}}')
+aws --profile=ighackathon dynamodb update-item --table-name SteliosTest-Stelios-EpicPriceAlert   --key '{"PK":{"S":"a1274ad5bc21ed2e02636e6bb1f8bc584ccb19f3"}}'   --update-expression 'SET triggerEvents = :i'   --expression-attribute-values file://<(echo '{ ":i" : {"S":"[{\"seqNo\": 1,\"data\": {\"instrument_name\":\"someName\",\"price\":\"10000\",\"instrument\":\"epic\",\"meta\": {\"id\": \"14b9-1fd2-acaa-5df5\",\"timestamp\": 1383597267}}}]"}}')
 ```
 
 logs:

@@ -1,14 +1,14 @@
 import json
 import os
 import boto3
-from aws_xray_sdk.core import xray_recorder
-from aws_xray_sdk.core import patch_all
+#from aws_xray_sdk.core import xray_recorder
+#from aws_xray_sdk.core import patch_all
 from boto3.dynamodb.conditions import Attr
 from botocore.exceptions import ClientError
 
 # import requests
 
-patch_all()
+#patch_all()
 
 def iftttError(code, error):
     """lambda response on error
@@ -94,8 +94,8 @@ def lambda_handler(event, context):
         try:
             #see https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/dynamodb.html#DynamoDB.Table.delete_item
             response = table.delete_item(
-                Key={'triggerId':trigger_id},
-                ConditionExpression=Attr('triggerId').eq(trigger_id),
+                Key={'PK':trigger_id},
+                ConditionExpression=Attr('PK').eq(trigger_id),
             )
         except ClientError as e:
             print(f"clientError={e}")
@@ -114,7 +114,7 @@ def lambda_handler(event, context):
         print(f"triggerId={trigger_id}")
 
         response = table.get_item(
-            Key={'triggerId':trigger_id},
+            Key={'PK':trigger_id},
             ProjectionExpression="triggerEvents,lastTriggerEventSentSeqNo"
         )
         print(f"response={response}")
@@ -128,7 +128,7 @@ def lambda_handler(event, context):
             #todo validate trigger fields
             response = table.put_item(
                 Item={
-                    'triggerId': trigger_id,
+                    'PK': trigger_id,
                     #hacky string way to avoid having multiple columns
                     'triggerFields': json.dumps(triggerFields),
                 },
@@ -153,7 +153,7 @@ def lambda_handler(event, context):
                 print(f"putting lastTriggerEventSentSeqNo={lastSentNow}")
                 table.update_item(
                     Key={
-                        'triggerId': trigger_id,
+                        'PK': trigger_id,
                     },
                     AttributeUpdates={
                         'lastTriggerEventSentSeqNo': {

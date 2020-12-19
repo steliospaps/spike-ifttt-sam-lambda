@@ -30,10 +30,10 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties:
       AttributeDefinitions: 
-        - AttributeName: triggerId
+        - AttributeName: PK
           AttributeType: S
       KeySchema: 
-        - AttributeName: triggerId
+        - AttributeName: PK
           KeyType: HASH
       ProvisionedThroughput: 
         ReadCapacityUnits: 5
