@@ -30,6 +30,12 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: Prod
+      MethodSettings:
+        - HttpMethod: "*"
+          ResourcePath: "/*"
+          ThrottlingBurstLimit: 50
+          ThrottlingRateLimit: 100
+      TracingEnabled: true
       Auth:
         DefaultAuthorizer: CustomApiKeyAuthorizer
         Authorizers:
