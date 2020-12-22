@@ -5,7 +5,6 @@ from aws_xray_sdk.core import xray_recorder
 from aws_xray_sdk.core import patch_all
 from boto3.dynamodb.conditions import Attr
 from botocore.exceptions import ClientError
-from requests.structures import CaseInsensitiveDict
 # import requests
 
 patch_all()
@@ -63,17 +62,8 @@ def lambda_handler(event, context):
     print(f"method={method}")
     table_name = os.environ['DYNAMO_TABLE']
     print(f"table_name={table_name}")
-    api_key=os.environ['API_KEY'] # header IFTTT-Service-Key
     do_not_resend = os.environ.get("DO_NOT_RESEND","").lower() == "true"
     print(f"do_not_resend={do_not_resend}")
-    token = CaseInsensitiveDict(event['headers']).get("IFTTT-Service-Key","")
-    ##poor man's auth
-    if token!=api_key:
-        print(f"'{api_key}'!='{token}'")
-        return {
-            "statusCode": 401,
-            "body":'{"errors":[{"message":"invalid token"}]}',
-        }
 
     #print(os.environ)
     if(os.environ.get('AWS_SAM_LOCAL','false') == 'true'):
