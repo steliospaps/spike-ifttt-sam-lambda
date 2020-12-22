@@ -28,7 +28,7 @@ cleanup: local-cleanup
 	rm -rf ./aws-sam package
 
 local-run:      ## start api with local dynamo db
-local-run: $(MARKER_LOCAL) package
+local-run: $(MARKER_LOCAL) package build
 	sam local start-api --docker-network=local-sam
 
 package: ## refresh pacakge dependencies

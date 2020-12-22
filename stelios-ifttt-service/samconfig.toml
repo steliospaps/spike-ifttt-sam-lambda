@@ -2,7 +2,7 @@ version = 0.1
 [default]
 [default.deploy]
 [default.deploy.parameters]
-stack_name = "SteliosTest"
+stack_name = "SteliosTest-tmp"
 s3_bucket = "stelios-state"
 s3_prefix = "sam/SteliosTest"
 region = "eu-west-2"
