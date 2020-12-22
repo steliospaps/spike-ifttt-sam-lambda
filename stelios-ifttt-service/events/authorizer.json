@@ -1,0 +1,5 @@
+{
+  "type": "TOKEN",
+  "authorizationToken": "dummy-api-key",
+  "methodArn": "arn:aws:execute-api:eu-west-2:834656303304:qjjaxuozdh/Prod/GET/ifttt/v1/status"
+}

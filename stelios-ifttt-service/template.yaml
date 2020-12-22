@@ -26,6 +26,19 @@ Parameters:
     Default: dummy-api-key
 
 Resources:
+  MyApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Auth:
+        DefaultAuthorizer: CustomApiKeyAuthorizer
+        Authorizers:
+          CustomApiKeyAuthorizer:
+            FunctionPayloadType: TOKEN
+            FunctionArn: !GetAtt MyAuthFunction.Arn
+            Identity:
+              Header: IFTTT-Service-Key
+              ReauthorizeEvery: 3600
   TriggersTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -41,6 +54,11 @@ Resources:
       StreamSpecification:
         StreamViewType: NEW_AND_OLD_IMAGES #NEW_IMAGE | OLD_IMAGE | NEW_AND_OLD_IMAGES | KEYS_ONLY  
       TableName: !Sub "${AWS::StackName}-Stelios-EpicPriceAlert"
+  MyAuthFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: token_auth/
+      Handler: app.lambda_handler
   StatusFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -50,6 +68,7 @@ Resources:
         status:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
+            RestApiId: !Ref MyApi
             Path: /ifttt/v1/status
             Method: get
   TestSetupFunction:
@@ -61,6 +80,7 @@ Resources:
         status:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
+            RestApiId: !Ref MyApi
             Path: /ifttt/v1/test/setup
             Method: post
   TriggerFunction:
@@ -84,11 +104,13 @@ Resources:
         poll:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
+            RestApiId: !Ref MyApi
             Path: /ifttt/v1/triggers/instrument_price
             Method: post
         delete:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
+            RestApiId: !Ref MyApi
             Path: /ifttt/v1/triggers/instrument_price/trigger_identity/{trigger_id}
             Method: delete
   RealTimeAlerterFunction:
@@ -116,7 +138,7 @@ Resources:
     Properties:
       LayerName: ifft-python-lib
       Description: Dependencies for the app.
-      ContentUri: package/.
+      ContentUri: package/
       CompatibleRuntimes:
         - python3.8
 Outputs:
@@ -125,7 +147,7 @@ Outputs:
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   Api:
     Description: "API Gateway endpoint URL"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+    Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
   TriggersTable:
     Description: "dynamoDb ARN"
     Value: !GetAtt TriggersTable.Arn

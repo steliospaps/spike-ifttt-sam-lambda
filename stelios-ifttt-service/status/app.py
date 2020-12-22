@@ -35,15 +35,15 @@ def lambda_handler(event, context):
 
     #     raise e
 
-    api_key=os.environ['API_KEY'] # header IFTTT-Service-Key
-    token = CaseInsensitiveDict(event['headers']).get("IFTTT-Service-Key","")
+    #api_key=os.environ['API_KEY'] # header IFTTT-Service-Key
+    #token = CaseInsensitiveDict(event['headers']).get("IFTTT-Service-Key","")
     ##poor man's auth
-    if token!=api_key:
-        print(f"'{api_key}'!='{token}'")
-        return {
-            "statusCode": 401,
-            "body":'{"errors":[{"message":"invalid token"}]}',
-        }
+    #if token!=api_key:
+    #    print(f"'{api_key}'!='{token}'")
+    #    return {
+    #        "statusCode": 401,
+    #        "body":'{"errors":[{"message":"invalid token"}]}',
+    #    }
         
     return {
         "statusCode": 200,
