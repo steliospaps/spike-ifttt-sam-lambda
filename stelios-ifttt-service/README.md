@@ -125,11 +125,13 @@ see
 - https://github.com/ganshan/sam-dynamodb-local
 - https://github.com/lvthillo/aws-lambda-sam-demo, 
 - https://stackoverflow.com/questions/48926260/connecting-aws-sam-local-with-dynamodb-in-docker
-  https://github.com/rynop/abp-sam-nestjs
+- https://github.com/rynop/abp-sam-nestjs
+- for stream support: https://stackoverflow.com/questions/34883142/stream-support-for-local-dynamodb
 
 ```
 #run in background
 make local-run
+# access the shell at http://localhost:8000/shell/
 
 # use aws to manipulate the database
 aws --profile=fake dynamodb list-tables --endpoint-url http://localhost:8000

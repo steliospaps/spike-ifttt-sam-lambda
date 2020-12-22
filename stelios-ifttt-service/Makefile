@@ -12,6 +12,7 @@ MARKER_LOCAL=.marker_local_init
 
 local-init:     ## (re)inititalise local resources (such as dynamo db). remember to local-cleanup
 	docker-compose up -d
+	echo you can access the shell at http://localhost:8000/shell/
 	echo using local aws profile '$(LOCAL_AWS_PROFILE)' If aws errors please set it up
 	AWS_PROFILE=$(LOCAL_AWS_PROFILE) dynamodb/create-local-table.sh
 	touch $(MARKER_LOCAL)

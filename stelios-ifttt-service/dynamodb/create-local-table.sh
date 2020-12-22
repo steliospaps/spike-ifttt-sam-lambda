@@ -12,4 +12,5 @@ aws dynamodb create-table \
     --attribute-definitions AttributeName=PK,AttributeType=S  \
     --key-schema AttributeName=PK,KeyType=HASH \
     --provisioned-throughput ReadCapacityUnits=50,WriteCapacityUnits=50 \
+    --stream-specification StreamEnabled=true,StreamViewType=NEW_AND_OLD_IMAGES\
     --endpoint-url http://localhost:8000 >/dev/null
