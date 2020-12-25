@@ -2,8 +2,10 @@ package io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponen
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest
+@SpringBootTest()
+@ActiveProfiles("junit")
 class AlerterComponentApplicationTests {
 
 	@Test
