@@ -21,7 +21,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverterFacto
 public class DynamoDBConfiguration {
 
 	@Bean
-	//name of function has to match argument of @@EnableDynamoDBRepositories.dynamoDBMapperConfigRef above 
+	//name of function has to match argument of @EnableDynamoDBRepositories.dynamoDBMapperConfigRef above 
     public DynamoDBMapperConfig myDynamoDBMapperConfig(TableNameOverride tableNameOverrider) {
         // Create empty DynamoDBMapperConfig builder
 	DynamoDBMapperConfig.Builder builder = new DynamoDBMapperConfig.Builder();
