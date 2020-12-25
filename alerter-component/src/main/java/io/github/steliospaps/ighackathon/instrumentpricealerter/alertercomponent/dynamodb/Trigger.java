@@ -8,7 +8,7 @@ import lombok.Data;
 import lombok.Getter;
 
 @Data
-@DynamoDBTable(tableName = "comesFromDynamoDBConfiguration")//name comes from configuration in DynamoDBConfiguration
+@DynamoDBTable(tableName = "dummy")//name comes from configuration in DynamoDBConfiguration
 //see https://github.com/boostchicken/spring-data-dynamodb
 public class Trigger {
 	//If I omit the attributeName is does not work

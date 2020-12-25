@@ -1,6 +1,5 @@
 package io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb;
 
-import org.socialsignin.spring.data.dynamodb.repository.config.EnableDynamoDBRepositories;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,16 +9,15 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.DefaultTableNameResolver;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.PaginationLoadingStrategy;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.TableNameOverride;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverterFactory;
 
 
 @Configuration
-@EnableDynamoDBRepositories(basePackageClasses = PagingTriggerRepository.class,
-		dynamoDBMapperConfigRef = "myDynamoDBMapperConfig"// has to match the name of the bean defined in this class
-		)
 public class DynamoDBConfiguration {
 
+	/*
 	@Bean
 	//name of function has to match argument of @EnableDynamoDBRepositories.dynamoDBMapperConfigRef above 
     public DynamoDBMapperConfig myDynamoDBMapperConfig(TableNameOverride tableNameOverrider) {
@@ -28,6 +26,7 @@ public class DynamoDBConfiguration {
 	// Inject missing defaults from the deprecated method
 	builder.withTypeConverterFactory(DynamoDBTypeConverterFactory.standard());
 	builder.withTableNameResolver(DefaultTableNameResolver.INSTANCE);
+	builder.setPaginationLoadingStrategy(PaginationLoadingStrategy.ITERATION_ONLY);
         // Inject the table name overrider bean
 	builder.withTableNameOverride(tableNameOverrider);
 	return builder.build();
@@ -37,7 +36,7 @@ public class DynamoDBConfiguration {
     public TableNameOverride tableNameOverrider(@Value("${app.dynamodb.table-name}") String tableName) {
         return TableNameOverride.withTableNameReplacement(tableName);
     }
-    
+    */
 	@Bean
 	public AmazonDynamoDB amazonDynamoDB(AWSCredentialsProvider credentialsProvider) {
 		return AmazonDynamoDBClientBuilder.standard().withCredentials(credentialsProvider)
