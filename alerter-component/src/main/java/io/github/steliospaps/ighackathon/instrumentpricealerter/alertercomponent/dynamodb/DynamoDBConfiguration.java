@@ -1,33 +1,43 @@
 package io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb;
 
 import org.socialsignin.spring.data.dynamodb.repository.config.EnableDynamoDBRepositories;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
-import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.DefaultTableNameResolver;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.TableNameOverride;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverterFactory;
 
 
 @Configuration
-@EnableDynamoDBRepositories(basePackageClasses = PagingTriggerRepository.class)
+@EnableDynamoDBRepositories(basePackageClasses = PagingTriggerRepository.class,
+		dynamoDBMapperConfigRef = "myDynamoDBMapperConfig"// has to match the name of the bean defined in this class
+		)
 public class DynamoDBConfiguration {
-	/*
-	@Bean
-	public DynamoDBMapperConfig dynamoDBMapperConfig() {
-		return DynamoDBMapperConfig.DEFAULT;
-	}
-	 */
-	/*
-	@Bean
-	public DynamoDBMapper dynamoDBMapper(AmazonDynamoDB amazonDynamoDB, DynamoDBMapperConfig config) {
-		return new DynamoDBMapper(amazonDynamoDB, config);
-	}*/
 
+	@Bean
+	//name of function has to match argument of @@EnableDynamoDBRepositories.dynamoDBMapperConfigRef above 
+    public DynamoDBMapperConfig myDynamoDBMapperConfig(TableNameOverride tableNameOverrider) {
+        // Create empty DynamoDBMapperConfig builder
+	DynamoDBMapperConfig.Builder builder = new DynamoDBMapperConfig.Builder();
+	// Inject missing defaults from the deprecated method
+	builder.withTypeConverterFactory(DynamoDBTypeConverterFactory.standard());
+	builder.withTableNameResolver(DefaultTableNameResolver.INSTANCE);
+        // Inject the table name overrider bean
+	builder.withTableNameOverride(tableNameOverrider);
+	return builder.build();
+    }
+    
+    @Bean
+    public TableNameOverride tableNameOverrider(@Value("${app.dynamodb.table-name}") String tableName) {
+        return TableNameOverride.withTableNameReplacement(tableName);
+    }
+    
 	@Bean
 	public AmazonDynamoDB amazonDynamoDB(AWSCredentialsProvider credentialsProvider) {
 		return AmazonDynamoDBClientBuilder.standard().withCredentials(credentialsProvider)

@@ -1,7 +1,5 @@
 package io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb;
 
-import org.springframework.data.annotation.Id;
-
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
@@ -10,8 +8,8 @@ import lombok.Data;
 import lombok.Getter;
 
 @Data
-@DynamoDBTable(tableName = "TriggersTable")
-//see https://github.com/derjust/spring-data-dynamodb
+@DynamoDBTable(tableName = "comesFromDynamoDBConfiguration")//name comes from configuration in DynamoDBConfiguration
+//see https://github.com/boostchicken/spring-data-dynamodb
 public class Trigger {
 	//If I omit the attributeName is does not work
 	@Getter(onMethod = @__({@DynamoDBHashKey(attributeName = "PK")}))
