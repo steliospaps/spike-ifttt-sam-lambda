@@ -42,7 +42,7 @@ public class InitialTableScanner {
 	private String tableName;
 	@Value("${app.dynamodb.scan-chunk:10}") 
 	private int scanChunk;
-	
+		
 	@PostConstruct
 	void scanForTriggers(){
 		log.info("scanning entities scanChunk={} tableName={} ***********************",scanChunk, tableName);
@@ -66,7 +66,7 @@ public class InitialTableScanner {
 					Trigger toUpdate = new Trigger();
 					toUpdate.setPK(tr.getPK());
 					toUpdate.setTriggerEvents("[]");
-					mapper.save(toUpdate);//this overwrites other fields
+					mapper.save(toUpdate);//this updates non null fields (SaveBehavior.UPDATE_SKIP_NULL_ATTRIBUTES)
 				});
 		log.info("scanned entities ******************");
 		/*
