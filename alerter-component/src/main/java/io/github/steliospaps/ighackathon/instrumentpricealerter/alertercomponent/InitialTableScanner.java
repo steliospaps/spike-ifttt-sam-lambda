@@ -33,7 +33,7 @@ public class InitialTableScanner {
 	
 	@Value("${app.dynamodb.table-name}") 
 	private String tableName;
-	@Value("${app.dynamodb.scan-chunk:10}") 
+	@Value("${app.dynamodb.scan-chunk}") 
 	private int scanChunk;
 		
 	@PostConstruct
