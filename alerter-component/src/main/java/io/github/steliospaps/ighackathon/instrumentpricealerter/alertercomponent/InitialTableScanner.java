@@ -1,16 +1,12 @@
 package io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent;
 
-import java.util.Map;
-import java.util.stream.StreamSupport;
-
 import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.socket.server.upgrade.TomcatRequestUpgradeStrategy;
-
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
@@ -18,10 +14,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveB
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.TableNameOverride;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedScanList;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.ScanRequest;
-import com.amazonaws.services.dynamodbv2.model.ScanResult;
-
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.Trigger;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @Slf4j
 @Profile("!junit")
+@DependsOn("streamListener")
 public class InitialTableScanner {
 
 	@Autowired
@@ -63,34 +56,12 @@ public class InitialTableScanner {
 			scan//
 				.forEach(tr -> {
 				log.info("scanned {}",tr);
-					Trigger toUpdate = new Trigger();
-					toUpdate.setPK(tr.getPK());
-					toUpdate.setTriggerEvents("[]");
-					mapper.save(toUpdate);//this updates non null fields (SaveBehavior.UPDATE_SKIP_NULL_ATTRIBUTES)
-				});
-		log.info("scanned entities ******************");
-		/*
-		log.info("scanning entities scanChunk={} tableName={} ***********************",scanChunk, tableName);
-		
-		Map<String, AttributeValue> exclusiveStartKey = null;
-		do {
-			ScanRequest scanRequest = new ScanRequest(tableName);
-			scanRequest.setLimit(scanChunk);
-		
-			scanRequest.setExclusiveStartKey(exclusiveStartKey);
-			//scan
-			ScanResult scan = dynamoDb.scan(scanRequest);
-			exclusiveStartKey=scan.getLastEvaluatedKey();
-			scan.getItems().stream()//
-				.forEach(tr -> {
-				log.info("scanned {}",tr);
 					//Trigger toUpdate = new Trigger();
 					//toUpdate.setPK(tr.getPK());
 					//toUpdate.setTriggerEvents("[]");
-					//repository.save(toUpdate);//this overwrites other fields
+					//mapper.save(toUpdate);//this updates non null fields (SaveBehavior.UPDATE_SKIP_NULL_ATTRIBUTES)
 				});
-		}while(exclusiveStartKey!=null);
 		log.info("scanned entities ******************");
-		*/
+
 	}
 }

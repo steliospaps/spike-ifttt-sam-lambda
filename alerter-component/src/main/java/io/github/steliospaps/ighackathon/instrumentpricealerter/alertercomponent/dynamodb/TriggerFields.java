@@ -1,9 +1,5 @@
 package io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb;
 
-import java.math.BigDecimal;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
-
 import lombok.Data;
 
 @Data
