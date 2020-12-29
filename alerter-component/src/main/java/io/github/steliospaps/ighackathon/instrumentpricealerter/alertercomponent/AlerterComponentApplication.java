@@ -9,6 +9,8 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreams;
+import com.amazonaws.services.dynamodbv2.streamsadapter.AmazonDynamoDBStreamsAdapterClient;
 
 @SpringBootApplication
 public class AlerterComponentApplication {
@@ -17,15 +19,4 @@ public class AlerterComponentApplication {
 		SpringApplication.run(AlerterComponentApplication.class, args);
 	}
 
-	@Bean
-	@Profile("ChangeME")
-	public AWSCredentialsProvider amazonAWSCredentialsProvider() {
-		return DefaultAWSCredentialsProviderChain.getInstance();
-	}
-
-	@Bean
-	//Profile("local")
-	public AWSCredentialsProvider localAmazonAWSCredentialsProvider() {
-		return new AWSStaticCredentialsProvider(new BasicAWSCredentials("amazonAWSAccessKey", "amazonAWSSecretKey"));
-	}
 }

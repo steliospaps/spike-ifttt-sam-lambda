@@ -2,6 +2,7 @@
 backend component that uses dynamoDB to communicate with ifttt integration
 
 # dev
+## run against local components
 
 ```
 #start dynamodb local, create tables and streams, and run the api lambdas
@@ -16,8 +17,13 @@ aws dynamodb --endpoint-url http://localhost:8000 list-tables
 
 ```
 
-in another term:
+in another terminal:
 
 ```
-./gradlew bootRun
+./gradlew bootRun --args=--spring.profiles.active=local
+```
+
+## run against cloud
+```
+AWS_REGION=eu-west-2 AWS_PROFILE=someProfile ./gradlew bootRun --args=--TABLE_NAME=table-name
 ```

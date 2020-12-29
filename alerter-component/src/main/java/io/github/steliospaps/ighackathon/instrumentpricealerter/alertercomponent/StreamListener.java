@@ -16,6 +16,8 @@ import org.springframework.stereotype.Component;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatchClientBuilder;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreams;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreamsClientBuilder;
@@ -32,6 +34,7 @@ import com.amazonaws.services.kinesis.clientlibrary.types.InitializationInput;
 import com.amazonaws.services.kinesis.clientlibrary.types.ProcessRecordsInput;
 import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownInput;
 import com.amazonaws.services.kinesis.metrics.impl.NullMetricsScope;
+import com.amazonaws.services.kinesis.metrics.interfaces.MetricsLevel;
 import com.amazonaws.services.kinesis.model.Record;
 
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.Trigger;
@@ -134,18 +137,14 @@ public class StreamListener {
 
 	private DynamoDBMapper dynamoDbMapper;
 
+	@Autowired
+	private AmazonCloudWatch cloudWatchClient;
+
+	@Autowired
+	private AmazonDynamoDBStreamsAdapterClient adapterClient;
+
 	@PostConstruct
 	public void init() {
-		AmazonDynamoDBStreams dynamoDBStreamsClient = AmazonDynamoDBStreamsClientBuilder.standard()
-				// .withRegion(awsRegion)
-				.withEndpointConfiguration(new EndpointConfiguration("http://localhost:8000", "eu-west-1"))
-				.withCredentials(awsCredentialsProvider).build();
-		AmazonDynamoDBStreamsAdapterClient adapterClient = new AmazonDynamoDBStreamsAdapterClient(
-				dynamoDBStreamsClient);
-
-		// cloudWatchClient = AmazonCloudWatchClientBuilder.standard()
-		// //.withRegion(awsRegion)
-		// .build();
 
 		dynamoDbMapper = new DynamoDBMapper(dynamoDb);
 
@@ -154,13 +153,14 @@ public class StreamListener {
 		KinesisClientLibConfiguration workerConfig = new KinesisClientLibConfiguration("streams-adapter-triggerstable",
 				streamArn, awsCredentialsProvider, "streams-adapter-triggerstable-worker").withMaxRecords(1000)
 						.withIdleTimeBetweenReadsInMillis(500)
+						.withMetricsLevel(MetricsLevel.NONE)
 						.withInitialPositionInStream(InitialPositionInStream.LATEST);
 
 		log.info("*********** Creating worker for stream: " + streamArn);
 		IRecordProcessorFactory recordProcessorFactory = () -> new RecordProcessor();
 		execService = Executors.newFixedThreadPool(1);
 		worker = StreamsWorkerFactory.createDynamoDbStreamsWorker(recordProcessorFactory, workerConfig, adapterClient,
-				dynamoDb, () -> new NullMetricsScope(), // TODO this should be using a cloudwatch client instead? for
+				dynamoDb, cloudWatchClient, // TODO this should be using a cloudwatch client instead? for
 														// now I leave it likie this so that I can start locally
 				execService);
 		log.info("**** Starting worker...");
