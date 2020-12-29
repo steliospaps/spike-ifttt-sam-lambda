@@ -54,7 +54,6 @@ public class StreamListener {
 			log.info("initialize {}", initializationInput);
 		}
 
-
 		@Override
 		@SneakyThrows
 		public void processRecords(ProcessRecordsInput processRecordsInput) {
@@ -83,15 +82,14 @@ public class StreamListener {
 						break;
 					}
 					default:
-						log.warn("unexpected eventName {}",o.getEventName());
+						log.warn("unexpected eventName {}", o.getEventName());
 					}
 				} else {
-					log.warn("got record of unexpected class={}",r.getClass());
+					log.warn("got record of unexpected class={}", r.getClass());
 
 				}
 				processRecordsInput.getCheckpointer().checkpoint(r);
 			}
-			
 
 		}
 
@@ -122,6 +120,10 @@ public class StreamListener {
 
 	@Value("${app.dynamodb.table-name}")
 	private String tableName;
+	@Value("${app.dynamodb.streams.table-name}")
+	private String kinesisTableName;
+	@Value("${app.dynamodb.streams.worker-name}")
+	private String kinesisWorkerName;
 
 	@Autowired
 	private AWSCredentialsProvider awsCredentialsProvider;
@@ -130,8 +132,6 @@ public class StreamListener {
 	private ObjectMapper jaxbMapper;
 
 	private Thread t;
-
-	private ExecutorService execService;
 
 	private Worker worker;
 
@@ -142,6 +142,8 @@ public class StreamListener {
 
 	@Autowired
 	private AmazonDynamoDBStreamsAdapterClient adapterClient;
+	@Value("${app.dynamodb.streams.metrics-level}")
+	private MetricsLevel metricsLevel;
 
 	@PostConstruct
 	public void init() {
@@ -150,21 +152,23 @@ public class StreamListener {
 
 		String streamArn = dynamoDb.describeTable(tableName).getTable().getLatestStreamArn();
 
-		KinesisClientLibConfiguration workerConfig = new KinesisClientLibConfiguration("streams-adapter-triggerstable",
-				streamArn, awsCredentialsProvider, "streams-adapter-triggerstable-worker").withMaxRecords(1000)
-						.withIdleTimeBetweenReadsInMillis(500)
-						.withMetricsLevel(MetricsLevel.NONE)
+		KinesisClientLibConfiguration workerConfig = new KinesisClientLibConfiguration(kinesisTableName,
+				streamArn, awsCredentialsProvider, kinesisWorkerName)//
+						.withMaxRecords(1000)//
+						.withIdleTimeBetweenReadsInMillis(500)//
+						.withMetricsLevel(metricsLevel)//
 						.withInitialPositionInStream(InitialPositionInStream.LATEST);
 
 		log.info("*********** Creating worker for stream: " + streamArn);
 		IRecordProcessorFactory recordProcessorFactory = () -> new RecordProcessor();
-		execService = Executors.newFixedThreadPool(1);
-		worker = StreamsWorkerFactory.createDynamoDbStreamsWorker(recordProcessorFactory, workerConfig, adapterClient,
-				dynamoDb, cloudWatchClient, // TODO this should be using a cloudwatch client instead? for
-														// now I leave it likie this so that I can start locally
-				execService);
+
+		worker = StreamsWorkerFactory.createDynamoDbStreamsWorker(recordProcessorFactory,//
+				workerConfig,//
+				adapterClient, //
+				dynamoDb, //
+				cloudWatchClient);
 		log.info("**** Starting worker...");
-		t = new Thread(worker,"dynamodbStreams-worker");
+		t = new Thread(worker, "dynamodbStreams-worker");
 		t.start();
 
 	}
@@ -174,7 +178,6 @@ public class StreamListener {
 	public void shutdown() {
 		log.info("stopping worker");
 		worker.shutdown();
-		execService.shutdown();
 		t.join();
 		log.info("stopped worker");
 	}
