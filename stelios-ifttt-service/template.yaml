@@ -157,9 +157,9 @@ Outputs:
   TriggersTable:
     Description: "dynamoDb ARN"
     Value: !GetAtt TriggersTable.Arn
-#  TriggersTable:
-#    Description: "dynamoDb name"
-#    Value: !Ref TriggersTable
+  TriggersTableName:
+    Description: "dynamoDb name"
+    Value: !Ref TriggersTable
 #  StatusFunction:
 #    Description: "statusFunction ARN"
 #    Value: !GetAtt StatusFunction.Arn
