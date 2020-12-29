@@ -164,7 +164,7 @@ public class StreamListener {
 														// now I leave it likie this so that I can start locally
 				execService);
 		log.info("**** Starting worker...");
-		t = new Thread(worker);
+		t = new Thread(worker,"dynamodbStreams-worker");
 		t.start();
 
 	}
@@ -172,8 +172,10 @@ public class StreamListener {
 	@PreDestroy
 	@SneakyThrows
 	public void shutdown() {
+		log.info("stopping worker");
 		worker.shutdown();
 		execService.shutdown();
 		t.join();
+		log.info("stopped worker");
 	}
 }
