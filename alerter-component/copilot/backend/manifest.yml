@@ -16,10 +16,10 @@ image:
   healthcheck:
     # The command the container runs to determine if it's healthy.
     command: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
-    interval: 5m0s  # Time period between healthchecks. Default is 10s.
+    interval: 30s  # Time period between healthchecks. Default is 10s.
     retries: 2      # Number of times to retry before container is deemed unhealthy. Default is 2.
     timeout: 3s     # How long to wait before considering the healthcheck failed. Default is 5s.
-    start_period: 0s # Grace period within which to provide containers time to bootstrap before failed health checks count towards the maximum number of retries. Default is 0s.
+    start_period: 60s # Grace period within which to provide containers time to bootstrap before failed health checks count towards the maximum number of retries. Default is 0s.
 
 # Number of CPU units for the task.
 cpu: 256
@@ -32,6 +32,7 @@ count: 1
 #
 #variables:                    # Pass environment variables as key value pairs.
 #  LOG_LEVEL: info
+#variables:
 
 #secrets:                      # Pass secrets from AWS Systems Manager (SSM) Parameter Store.
 #  GITHUB_TOKEN: GITHUB_TOKEN  # The key is the name of the environment variable, the value is the name of the SSM      parameter.

@@ -1,0 +1,107 @@
+Parameters:
+  App:
+    Type: String
+    Description: Your application's name.
+  Env:
+    Type: String
+    Description: The environment name your service, job, or workflow is being deployed to.
+  Name:
+    Type: String
+    Description: The name of the service, job, or workflow being deployed.
+#  ApiStackName:
+#    Type: String
+#    Description: the stack-name of the api
+#    Default: SteliosTest
+Resources:
+  # Create your resource here, such as an AWS::DynamoDB::Table:
+  # MyTable:
+  #   Type: AWS::DynamoDB::Table
+  #   Properties:
+  #     ...
+
+  # 1. In addition to your resource, if you need to access the resource from your ECS task 
+  # then you need to create an AWS::IAM::ManagedPolicy that holds the permissions for your resource.
+  #
+  # For example, below is a sample policy for MyTable:
+  KCLDynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: leaseKey
+          AttributeType: S
+      KeySchema:
+        - AttributeName: leaseKey
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      TableName: 
+        Fn::Join:
+          - ''
+          - - !ImportValue "SteliosTest-TriggersTableName"
+            - '-stream-lease'
+  MyTableAccessPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+         - Sid: DDBActions
+           Effect: Allow
+           Action:
+             - dynamodb:DescribeStream
+             - dynamodb:DescribeTable
+             - dynamodb:Get*
+             - dynamodb:Scan
+             - dynamodb:Update*
+           Resource: !ImportValue "SteliosTest-TriggersTable"
+         - Sid: DDBActionsKinesis
+           Effect: Allow
+           Action:
+              - dynamodb:BatchGet*
+              - dynamodb:DescribeStream
+              - dynamodb:DescribeTable
+              - dynamodb:Get*
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:BatchWrite*
+              - dynamodb:Delete*
+              - dynamodb:Update*
+              - dynamodb:PutItem
+           Resource: !GetAtt KCLDynamoDBTable.Arn
+         - Sid: DDBConsumeStream
+           Effect: Allow
+           Action:
+            - dynamodb:DescribeStream
+            - dynamodb:GetRecords
+            - dynamodb:GetShardIterator
+            - dynamodb:ListStreams
+           Resource: !Join
+            - ''
+            - - !ImportValue "SteliosTest-TriggersTable"
+              - '/stream/*'
+#              #- dynamodb:BatchGet*
+#              - dynamodb:DescribeStream
+#              - dynamodb:DescribeTable
+#              - dynamodb:Get*
+#              #- dynamodb:Query
+#              - dynamodb:Scan
+#              #- dynamodb:BatchWrite*
+#              #- dynamodb:Create*
+#              #- dynamodb:Delete*
+#              - dynamodb:Update*
+#              #- dynamodb:PutItem
+
+Outputs:
+  # 2. If you want to inject a property of your resource as an environment variable to your ECS task,
+  # then you need to define an output for it.
+  #
+  # For example, the output MyTableName will be injected in capital snake case, MY_TABLE_NAME, to your task.
+  TableName:
+    Description: "The name of the DynamoDB."
+    Value: !ImportValue SteliosTest-TriggersTableName
+
+  # 1. You also need to output the IAM ManagedPolicy so that Copilot can inject it to your ECS task role.
+  MyTableAccessPolicyArn:
+    Description: "The ARN of the ManagedPolicy to attach to the task role."
+    Value: !Ref MyTableAccessPolicy

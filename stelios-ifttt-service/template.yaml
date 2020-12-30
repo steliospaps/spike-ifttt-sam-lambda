@@ -157,9 +157,13 @@ Outputs:
   TriggersTable:
     Description: "dynamoDb ARN"
     Value: !GetAtt TriggersTable.Arn
+    Export: 
+      Name: !Sub "${AWS::StackName}-TriggersTable"
   TriggersTableName:
     Description: "dynamoDb name"
     Value: !Ref TriggersTable
+    Export: 
+      Name: !Sub "${AWS::StackName}-TriggersTableName"
 #  StatusFunction:
 #    Description: "statusFunction ARN"
 #    Value: !GetAtt StatusFunction.Arn
