@@ -47,6 +47,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Slf4j
 @Profile("!junit")
 public class StreamListener {
+	//TODO: hook this into the actuator health
 	public class RecordProcessor implements IRecordProcessor {
 
 		@Override
