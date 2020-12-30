@@ -15,7 +15,7 @@ image:
   port: 8080
   healthcheck:
     # The command the container runs to determine if it's healthy.
-    command: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
+    command: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
     interval: 30s  # Time period between healthchecks. Default is 10s.
     retries: 2      # Number of times to retry before container is deemed unhealthy. Default is 2.
     timeout: 3s     # How long to wait before considering the healthcheck failed. Default is 5s.
