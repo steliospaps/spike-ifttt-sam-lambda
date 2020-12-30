@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.Trigger;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.TriggerEvent;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.TriggerEvent.Meta;
+import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.TriggerEventWrapper;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.TriggerFields;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -45,18 +46,24 @@ public class DummyAlerter implements Alerter{
 	@Override
 	public void onNewTrigger(String pk, TriggerFields tf) {
 		Disposable d1 = Flux.interval(interval)//
+			.map(i->i+1)//
 			.startWith(0L)//
 			.delaySubscription(initialDelay)//
-			.map(i -> TriggerEvent.builder()//
-					.instrument(tf.getEpic())//
-					.instrumentName("nameOf-"+tf.getEpic())//
-					.price(""+i)//
-					.meta(Meta.builder()//
-							.id(UUID.randomUUID().toString())//
-							.timestamp(Instant.now().getEpochSecond())//
-							.build()
-							)//
-					.build())//
+			.map(i -> 
+				TriggerEventWrapper.builder()
+					.seqNo(i)//
+					.data(TriggerEvent.builder()//
+						.instrument(tf.getEpic())//
+						.instrumentName("nameOf-"+tf.getEpic())//
+						.price(""+(1000+i))//
+						.meta(Meta.builder()//
+								.id(UUID.randomUUID().toString())//
+								.timestamp(Instant.now().getEpochSecond())//
+								.build()
+								)//
+						.build())//
+						.build()//
+						)
 			.log("pk="+pk)
 			.subscribe(te -> triggerAlert(pk, te));
 		Disposable old = subscriptions.put(pk, d1);
@@ -79,7 +86,7 @@ public class DummyAlerter implements Alerter{
 	}
 	
 	@SneakyThrows
-	private void triggerAlert(String pk, TriggerEvent te) {
+	private void triggerAlert(String pk, TriggerEventWrapper te) {
 		//TODO: race condition this can end up inserting (via update) when the delete has not arrived yet
 		// This can be addressed by changing the model to use a TTL field that gets set by the deletion
 		// instead of deleting 
