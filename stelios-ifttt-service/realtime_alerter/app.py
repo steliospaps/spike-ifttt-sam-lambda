@@ -50,9 +50,9 @@ def lambda_handler(event, context):
             if 'triggerEvents' in neo:
                 if neo['triggerEvents'].get("S","") != \
                     old.get('triggerEvents',{}).get("S",""):
-                    print(f"will alert for {neo['triggerId']}")
+                    print(f"will alert for {neo['PK']}")
                     toSend.append({
-                        'trigger_identity':neo['triggerId']['S']
+                        'trigger_identity':neo['PK']['S']
                     })
                 else:
                     print(f"ignoring event_id={event_id} because it has no triggerEvents changes")
