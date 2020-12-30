@@ -14,7 +14,11 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveB
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.TableNameOverride;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedScanList;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.alerting.Alerter;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.Trigger;
+import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.TriggerFields;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -35,7 +39,11 @@ public class InitialTableScanner {
 	private String tableName;
 	@Value("${app.dynamodb.scan-chunk}") 
 	private int scanChunk;
-		
+	@Autowired
+	private Alerter alerter;
+	@Autowired
+	private ObjectMapper jaxbMapper;
+	
 	@PostConstruct
 	void scanForTriggers(){
 		log.info("scanning entities scanChunk={} tableName={} ***********************",scanChunk, tableName);
@@ -54,13 +62,14 @@ public class InitialTableScanner {
 			PaginatedScanList<Trigger> scan = mapper.scan(Trigger.class, scanExpression);
 			
 			scan//
-				.forEach(tr -> {
+				.forEach(Util.sneakyC(tr -> {
 				log.info("scanned {}",tr);
+				alerter.onNewTrigger(tr.getPK(), jaxbMapper.readValue(tr.getTriggerFields(),TriggerFields.class));
 					//Trigger toUpdate = new Trigger();
 					//toUpdate.setPK(tr.getPK());
 					//toUpdate.setTriggerEvents("[]");
 					//mapper.save(toUpdate);//this updates non null fields (SaveBehavior.UPDATE_SKIP_NULL_ATTRIBUTES)
-				});
+				}));
 		log.info("scanned entities ******************");
 
 	}

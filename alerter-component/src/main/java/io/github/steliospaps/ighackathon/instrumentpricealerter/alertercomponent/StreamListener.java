@@ -39,6 +39,7 @@ import com.amazonaws.services.kinesis.metrics.impl.NullMetricsScope;
 import com.amazonaws.services.kinesis.metrics.interfaces.MetricsLevel;
 import com.amazonaws.services.kinesis.model.Record;
 
+import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.alerting.Alerter;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.Trigger;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.TriggerFields;
 import lombok.SneakyThrows;
@@ -49,7 +50,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Slf4j
 @Profile("!junit")
 public class StreamListener implements HealthIndicator{
-	//TODO: hook this into the actuator health
+
 	public class RecordProcessor implements IRecordProcessor {
 
 		@Override
@@ -73,9 +74,10 @@ public class StreamListener implements HealthIndicator{
 					case "INSERT": {
 						Trigger tr = dynamoDbMapper.marshallIntoObject(Trigger.class, o.getDynamodb().getNewImage());
 						TriggerFields tf = Optional.ofNullable(tr.getTriggerFields())//
-								.map(sneaky(str -> jaxbMapper.readValue(str, TriggerFields.class)))//
+								.map(Util.sneakyF(str -> jaxbMapper.readValue(str, TriggerFields.class)))//
 								.orElse(null);
 						log.info("new triggerId={} triggerFields={}", tr.getPK(), tf);
+						alerter.onNewTrigger(tr.getPK(),tf);
 						break;
 					}
 					case "MODIFY":
@@ -83,6 +85,7 @@ public class StreamListener implements HealthIndicator{
 					case "REMOVE": {
 						Trigger tr = dynamoDbMapper.marshallIntoObject(Trigger.class, o.getDynamodb().getOldImage());
 						log.info("delete triggerId={} triggerFields={}", tr.getPK());
+						alerter.onDeleteTrigger(tr.getPK());
 						break;
 					}
 					default:
@@ -105,19 +108,6 @@ public class StreamListener implements HealthIndicator{
 			shutdownInput.getCheckpointer().checkpoint();
 		}
 
-	}
-
-	public interface SneakyFunction<T, R> {
-		R apply(T t) throws Exception;
-
-		@SneakyThrows
-		default R sneakCall(T t) {
-			return apply(t);
-		}
-	}
-
-	public static <T, R> Function<T, R> sneaky(SneakyFunction<T, R> f) {
-		return t -> f.sneakCall(t);
 	}
 
 	@Autowired
@@ -149,6 +139,9 @@ public class StreamListener implements HealthIndicator{
 	private AmazonDynamoDBStreamsAdapterClient adapterClient;
 	@Value("${app.dynamodb.streams.metrics-level}")
 	private MetricsLevel metricsLevel;
+	
+	@Autowired
+	private Alerter alerter;
 
 	private volatile boolean connected=false;
 	
