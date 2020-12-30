@@ -20,12 +20,12 @@ local-init:     ## (re)inititalise local resources (such as dynamo db). remember
 $(MARKER_LOCAL):
 	$(MAKE) local-init
 
-local-cleanup:  ## cleanup local resources (such as dynamo db)
+local-clean:  ## cleanup local resources (such as dynamo db)
 	docker-compose down --volumes
 	rm -f $(MARKER_LOCAL)
 
-cleanup: ## cleanup everything
-cleanup: local-cleanup
+clean: ## cleanup everything
+clean: local-clean
 	rm -rf ./aws-sam package
 
 local-run:      ## start api with local dynamo db

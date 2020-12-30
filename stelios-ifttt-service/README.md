@@ -155,7 +155,7 @@ sam local invoke RealTimeAlerterFunction --event events/dynamodbUpdate.json
 ```
 # cleanup 
 ```
-docker-compose down --volumes
+make clean
 ```
 
 # deploy
