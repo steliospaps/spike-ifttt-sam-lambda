@@ -27,3 +27,24 @@ in another terminal:
 ```
 AWS_REGION=eu-west-2 AWS_PROFILE=someProfile ./gradlew bootRun --args=--TABLE_NAME=table-name
 ```
+# deploy
+Currently it can only deploy to one environment without editing files
+
+## env
+create environment (if not there already)
+```
+copilot env ls
+# if no prod:
+copilot env init --name prod --prod --default-config --profile ighackathon
+```
+## deploy app
+```
+./gradlew clean test assemble
+
+copilot svc deploy
+
+copilot svc status
+
+copilot svc log --follow
+```
+
