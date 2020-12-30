@@ -195,7 +195,7 @@ public class StreamListener implements HealthIndicator{
 		if(t!=null && !t.isAlive()) {
 			return Health.down().withDetail("worker-thread-status","down").build();
 		}
-		if(!connected) {
+		if(false && !connected) {//during a release the new image cannot get connected until the old one exits
 			return Health.down().withDetail("connected", false).build();
 		}
 		return Health.up().build();
