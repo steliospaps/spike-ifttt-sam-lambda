@@ -23,6 +23,8 @@ in another terminal:
 ./gradlew bootRun --args=--spring.profiles.active=local
 ```
 
+Note: the first time something is inserted to the table the application fails to read it. after that it works normally.
+
 ## run against cloud
 ```
 AWS_REGION=eu-west-2 AWS_PROFILE=someProfile ./gradlew bootRun --args=--TABLE_NAME=table-name

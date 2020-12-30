@@ -32,11 +32,6 @@ import lombok.extern.slf4j.Slf4j;
 @DependsOn("streamListener")
 public class InitialTableScanner {
 
-	@Autowired
-	private AmazonDynamoDB dynamoDb;
-	
-	@Value("${app.dynamodb.table-name}") 
-	private String tableName;
 	@Value("${app.dynamodb.scan-chunk}") 
 	private int scanChunk;
 	@Autowired
@@ -44,31 +39,25 @@ public class InitialTableScanner {
 	@Autowired
 	private ObjectMapper jaxbMapper;
 	
+	@Autowired
+	private DynamoDBMapper dynamoDbMapper;
+	
 	@PostConstruct
 	void scanForTriggers(){
-		log.info("scanning entities scanChunk={} tableName={} ***********************",scanChunk, tableName);
+		log.info("scanning entities scanChunk={} ***********************",scanChunk);
 
-		DynamoDBMapperConfig cfg = new DynamoDBMapperConfig.Builder()
-				.withTableNameOverride(TableNameOverride.withTableNameReplacement(tableName))//
-				.withSaveBehavior(SaveBehavior.UPDATE_SKIP_NULL_ATTRIBUTES)// so that nulls are ignored
-				.build();
-		DynamoDBMapper mapper = new DynamoDBMapper(dynamoDb,cfg);
 		
 		
 			DynamoDBScanExpression scanExpression =  new DynamoDBScanExpression();
 			scanExpression.setLimit(scanChunk);
 			//TODO: optimize this for parallel scan
 			//TODO: how to deal with more results than jvm memory? (shard?)
-			PaginatedScanList<Trigger> scan = mapper.scan(Trigger.class, scanExpression);
+			PaginatedScanList<Trigger> scan = dynamoDbMapper.scan(Trigger.class, scanExpression);
 			
 			scan//
 				.forEach(Util.sneakyC(tr -> {
 				log.info("scanned {}",tr);
 				alerter.onNewTrigger(tr.getPK(), jaxbMapper.readValue(tr.getTriggerFields(),TriggerFields.class));
-					//Trigger toUpdate = new Trigger();
-					//toUpdate.setPK(tr.getPK());
-					//toUpdate.setTriggerEvents("[]");
-					//mapper.save(toUpdate);//this updates non null fields (SaveBehavior.UPDATE_SKIP_NULL_ATTRIBUTES)
 				}));
 		log.info("scanned entities ******************");
 
