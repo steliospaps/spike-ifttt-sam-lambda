@@ -11,6 +11,8 @@ import javax.annotation.PreDestroy;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -46,13 +48,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Component
 @Slf4j
 @Profile("!junit")
-public class StreamListener {
+public class StreamListener implements HealthIndicator{
 	//TODO: hook this into the actuator health
 	public class RecordProcessor implements IRecordProcessor {
 
 		@Override
 		public void initialize(InitializationInput initializationInput) {
 			log.info("initialize {}", initializationInput);
+			connected=true;
 		}
 
 		@Override
@@ -98,6 +101,7 @@ public class StreamListener {
 		@SneakyThrows
 		public void shutdown(ShutdownInput shutdownInput) {
 			log.info("shutdown {}", shutdownInput);
+			connected=false;
 			shutdownInput.getCheckpointer().checkpoint();
 		}
 
@@ -146,9 +150,11 @@ public class StreamListener {
 	@Value("${app.dynamodb.streams.metrics-level}")
 	private MetricsLevel metricsLevel;
 
+	private volatile boolean connected=false;
+	
 	@PostConstruct
 	public void init() {
-
+		connected=false;
 		dynamoDbMapper = new DynamoDBMapper(dynamoDb);
 
 		String streamArn = dynamoDb.describeTable(tableName).getTable().getLatestStreamArn();
@@ -180,6 +186,18 @@ public class StreamListener {
 		log.info("stopping worker");
 		worker.shutdown();
 		t.join();
+		connected=false;
 		log.info("stopped worker");
+	}
+
+	@Override
+	public Health health() {
+		if(t!=null && !t.isAlive()) {
+			return Health.down().withDetail("worker-thread-status","down").build();
+		}
+		if(!connected) {
+			return Health.down().withDetail("connected", false).build();
+		}
+		return Health.up().build();
 	}
 }
