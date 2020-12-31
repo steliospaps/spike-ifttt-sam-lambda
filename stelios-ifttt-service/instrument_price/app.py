@@ -9,6 +9,8 @@ from botocore.exceptions import ClientError
 
 patch_all()
 
+table_name = os.environ['DYNAMO_TABLE']
+
 def iftttError(code, error):
     """lambda response on error
     Parameters
@@ -60,10 +62,7 @@ def lambda_handler(event, context):
     print(event)
     method=event['httpMethod']
     print(f"method={method}")
-    table_name = os.environ['DYNAMO_TABLE']
     print(f"table_name={table_name}")
-    do_not_resend = os.environ.get("DO_NOT_RESEND","").lower() == "true"
-    print(f"do_not_resend={do_not_resend}")
 
     #print(os.environ)
     if(os.environ.get('AWS_SAM_LOCAL','false') == 'true'):
@@ -105,7 +104,7 @@ def lambda_handler(event, context):
 
         response = table.get_item(
             Key={'PK':trigger_id},
-            ProjectionExpression="triggerEvents,lastTriggerEventSentSeqNo"
+            ProjectionExpression="triggerEvents"
         )
         print(f"response={response}")
 
@@ -131,27 +130,11 @@ def lambda_handler(event, context):
             #hacky string way to avoid having multiple columns
             #TODO: change this to a se Map? (will allow to add without overwrite)
             events = json.loads(item.get("triggerEvents","[]"))
-            lastSent = item.get("lastTriggerEventSentSeqNo",None)
             triggered= []
-            lastSentNow=None
             for event in events:
                 #TODO: implement limit (not needed now becasue I expect only up to one events)
-                if (not do_not_resend) or (lastSent is None or event['seqNo']>lastSent):
-                    triggered.append(event['data'])
-                    lastSentNow=event['seqNo']
-            if do_not_resend and (lastSentNow is not None):
-                print(f"putting lastTriggerEventSentSeqNo={lastSentNow}")
-                table.update_item(
-                    Key={
-                        'PK': trigger_id,
-                    },
-                    AttributeUpdates={
-                        'lastTriggerEventSentSeqNo': {
-                            'Value': lastSentNow,
-                            'Action': 'PUT'
-                        }
-                    },
-                )
+                triggered.append(event['data'])
+                
         return {
             "statusCode": 200,
             "body": json.dumps({
