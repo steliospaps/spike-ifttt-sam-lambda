@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * scans the persistent store on application start.
+ * 
  * @author stelios
  *
  */
@@ -32,32 +33,37 @@ import lombok.extern.slf4j.Slf4j;
 @DependsOn("streamListener")
 public class InitialTableScanner {
 
-	@Value("${app.dynamodb.scan-chunk}") 
+	@Value("${app.dynamodb.scan-chunk}")
 	private int scanChunk;
 	@Autowired
 	private Alerter alerter;
 	@Autowired
 	private ObjectMapper jaxbMapper;
-	
+
 	@Autowired
 	private DynamoDBMapper dynamoDbMapper;
-	
-	@PostConstruct
-	void scanForTriggers(){
-		log.info("scanning entities scanChunk={} ***********************",scanChunk);
 
-		
-		
-			DynamoDBScanExpression scanExpression =  new DynamoDBScanExpression();
-			scanExpression.setLimit(scanChunk);
-			//TODO: optimize this for parallel scan
-			//TODO: how to deal with more results than jvm memory? (shard?)
-			PaginatedScanList<Trigger> scan = dynamoDbMapper.scan(Trigger.class, scanExpression);
-			
-			scan//
+	@PostConstruct
+	void scanForTriggers() {
+		log.info("scanning entities scanChunk={} ***********************", scanChunk);
+
+		DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
+		scanExpression.setLimit(scanChunk);
+		// TODO: optimize this for parallel scan
+		// TODO: how to deal with more results than jvm memory? (shard?)
+		PaginatedScanList<Trigger> scan = dynamoDbMapper.scan(Trigger.class, scanExpression);
+
+		scan//
 				.forEach(Util.sneakyC(tr -> {
-				log.info("scanned {}",tr);
-				alerter.onNewTrigger(tr.getPK(), jaxbMapper.readValue(tr.getTriggerFields(),TriggerFields.class));
+					log.info("scanned {}", tr);
+					if (TriggersUtil.isTriggerRecord(tr)) {
+						log.info("looks like a trigger");
+						alerter.onNewTrigger(tr.getPK(),
+								jaxbMapper.readValue(tr.getTriggerFields(), TriggerFields.class));
+
+					} else {
+						log.info("skipping");
+					}
 				}));
 		log.info("scanned entities ******************");
 

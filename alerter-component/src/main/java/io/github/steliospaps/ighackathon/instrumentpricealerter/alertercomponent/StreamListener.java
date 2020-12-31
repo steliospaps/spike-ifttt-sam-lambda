@@ -49,14 +49,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Component
 @Slf4j
 @Profile("!junit")
-public class StreamListener implements HealthIndicator{
+public class StreamListener implements HealthIndicator {
 
 	public class RecordProcessor implements IRecordProcessor {
 
 		@Override
 		public void initialize(InitializationInput initializationInput) {
 			log.info("initialize {}", initializationInput);
-			connected=true;
 		}
 
 		@Override
@@ -72,20 +71,33 @@ public class StreamListener implements HealthIndicator{
 
 					switch (o.getEventName()) {
 					case "INSERT": {
+
 						Trigger tr = dynamoDbMapper.marshallIntoObject(Trigger.class, o.getDynamodb().getNewImage());
-						TriggerFields tf = Optional.ofNullable(tr.getTriggerFields())//
-								.map(Util.sneakyF(str -> jaxbMapper.readValue(str, TriggerFields.class)))//
-								.orElse(null);
-						log.info("new triggerId={} triggerFields={}", tr.getPK(), tf);
-						alerter.onNewTrigger(tr.getPK(),tf);
+						if (TriggersUtil.isTriggerRecord(tr)) {
+							TriggerFields tf = Optional.ofNullable(tr.getTriggerFields())//
+									.map(Util.sneakyF(str -> jaxbMapper.readValue(str, TriggerFields.class)))//
+									.orElse(null);
+							log.info("new triggerId={} triggerFields={}", tr.getPK(), tf);
+							if (tf != null) {
+								alerter.onNewTrigger(tr.getPK(), tf);
+							} else {
+								log.warn("skipping {} (no triggerFields)", tr);
+							}
+						} else {
+							log.info("skipping");
+						}
 						break;
 					}
 					case "MODIFY":
 						continue;
 					case "REMOVE": {
 						Trigger tr = dynamoDbMapper.marshallIntoObject(Trigger.class, o.getDynamodb().getOldImage());
-						log.info("delete triggerId={} triggerFields={}", tr.getPK());
-						alerter.onDeleteTrigger(tr.getPK());
+						if (TriggersUtil.isTriggerRecord(tr)) {
+							log.info("delete triggerId={} triggerFields={}", tr.getPK());
+							alerter.onDeleteTrigger(tr.getPK());
+						} else {
+							log.info("skipping");
+						}
 						break;
 					}
 					default:
@@ -104,7 +116,6 @@ public class StreamListener implements HealthIndicator{
 		@SneakyThrows
 		public void shutdown(ShutdownInput shutdownInput) {
 			log.info("shutdown {}", shutdownInput);
-			connected=false;
 			shutdownInput.getCheckpointer().checkpoint();
 		}
 
@@ -139,21 +150,18 @@ public class StreamListener implements HealthIndicator{
 	private AmazonDynamoDBStreamsAdapterClient adapterClient;
 	@Value("${app.dynamodb.streams.metrics-level}")
 	private MetricsLevel metricsLevel;
-	
+
 	@Autowired
 	private Alerter alerter;
 
-	private volatile boolean connected=false;
-	
 	@PostConstruct
 	public void init() {
-		connected=false;
 		dynamoDbMapper = new DynamoDBMapper(dynamoDb);
 
 		String streamArn = dynamoDb.describeTable(tableName).getTable().getLatestStreamArn();
 
-		KinesisClientLibConfiguration workerConfig = new KinesisClientLibConfiguration(kinesisTableName,
-				streamArn, awsCredentialsProvider, kinesisWorkerName)//
+		KinesisClientLibConfiguration workerConfig = new KinesisClientLibConfiguration(kinesisTableName, streamArn,
+				awsCredentialsProvider, kinesisWorkerName)//
 						.withMaxRecords(1000)//
 						.withIdleTimeBetweenReadsInMillis(500)//
 						.withMetricsLevel(metricsLevel)//
@@ -162,8 +170,8 @@ public class StreamListener implements HealthIndicator{
 		log.info("*********** Creating worker for stream: " + streamArn);
 		IRecordProcessorFactory recordProcessorFactory = () -> new RecordProcessor();
 
-		worker = StreamsWorkerFactory.createDynamoDbStreamsWorker(recordProcessorFactory,//
-				workerConfig,//
+		worker = StreamsWorkerFactory.createDynamoDbStreamsWorker(recordProcessorFactory, //
+				workerConfig, //
 				adapterClient, //
 				dynamoDb, //
 				cloudWatchClient);
@@ -179,17 +187,13 @@ public class StreamListener implements HealthIndicator{
 		log.info("stopping worker");
 		worker.shutdown();
 		t.join();
-		connected=false;
 		log.info("stopped worker");
 	}
 
 	@Override
 	public Health health() {
-		if(t!=null && !t.isAlive()) {
-			return Health.down().withDetail("worker-thread-status","down").build();
-		}
-		if(false && !connected) {//during a release the new image cannot get connected until the old one exits
-			return Health.down().withDetail("connected", false).build();
+		if (t != null && !t.isAlive()) {
+			return Health.down().withDetail("worker-thread-status", "down").build();
 		}
 		return Health.up().build();
 	}

@@ -41,26 +41,38 @@ def lambda_handler(event, context):
     is_local=os.environ.get('AWS_SAM_LOCAL',False)
     print("event=",event)
 
-    toSend=[]
+    triggerIds=set()
     for record in event.get('Records',[]):
         event_id=record['eventID']
         if record['eventName'] == "MODIFY":
             neo = record['dynamodb']['NewImage'] #should always be there for MODIFY
             old = record['dynamodb']['OldImage'] #should always be there for MODIFY
-            if 'triggerEvents' in neo:
-                if neo['triggerEvents'].get("S","") != \
-                    old.get('triggerEvents',{}).get("S",""):
-                    print(f"will alert for {neo['PK']}")
-                    toSend.append({
-                        'trigger_identity':neo['PK']['S']
-                    })
+            if neo['PK']['S'].startswith("TR#"):
+                if neo['PK']['S'] == neo.get("SK",{}).get("S",""):
+                    if 'triggerEvents' in neo:
+                        if 'triggerId' in neo:
+                            if neo['triggerEvents'].get("S","") != \
+                                old.get('triggerEvents',{}).get("S",""):
+                                print(f"will alert for {neo['PK']}")
+                                triggerIds.add(neo['triggerId']['S'])
+                            else:
+                                print(f"ignoring event_id={event_id} because it has no triggerEvents changes")
+                        else:
+                            print(f"ignoring event_id={event_id} because it has no triggerId changes")
+                    else:
+                        print(f"ignoring event_id={event_id} because it has no triggerEvents")
                 else:
-                    print(f"ignoring event_id={event_id} because it has no triggerEvents changes")
+                    print(f"ignoring event_id={event_id} because PK!=SK")
             else:
-                print(f"ignoring event_id={event_id} because it has no triggerEvents")
+                print(f"ignoring event_id={event_id} because PK does not start with 'TR#'")
         else:
             print(f"ignoring event_id={event_id} because it is not MODIFY")
 
+    toSend=[]
+    for tr in triggerIds:
+        toSend.append({
+            'trigger_identity':tr
+        })
     #verbose logging
     if True:
         #https://stackoverflow.com/questions/10588644/how-can-i-see-the-entire-http-request-thats-being-sent-by-my-python-application
@@ -76,12 +88,13 @@ def lambda_handler(event, context):
         #IFTTT-Service-Key: WlWFGKXFsXBaFMt8yZ7aLOafdqo7mAhY
         #https://realtime.ifttt.com/v1/notifications
         body={"data":toSend}
+        bodyStr=json.dumps(body)
         if is_local:
-            print(f"would have sent alerts body={body} event_id={event_id} api_key={api_key}")
+            print(f"would have sent alerts body={bodyStr} event_id={event_id} api_key={api_key}")
         else:
-            print(f"sending alerts body={body} event_id={event_id} api_key={api_key}")
+            print(f"sending alerts body={bodyStr} event_id={event_id} api_key={api_key}")
             res = requests.post(url="https://realtime.ifttt.com/v1/notifications",
-            data=json.dumps(body),
+            data=bodyStr,
             headers={
                 'IFTTT-Service-Key': api_key,
                 'Content-Type': 'application/json',

@@ -48,9 +48,13 @@ Resources:
       AttributeDefinitions: 
         - AttributeName: PK
           AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
       KeySchema: 
         - AttributeName: PK
           KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
       ProvisionedThroughput: 
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
@@ -63,7 +67,8 @@ Resources:
       CodeUri: token_auth/
       Handler: app.lambda_handler
       Environment:
-        API_KEY: !Ref ApiKey
+        Variables:
+          API_KEY: !Ref ApiKey
   StatusFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -102,8 +107,6 @@ Resources:
       Tracing: Active
       Layers:
         - !Ref libs
-      Environment:
-        API_KEY: !Ref ApiKey
       Events:
         poll:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
@@ -124,6 +127,9 @@ Resources:
       Handler: app.lambda_handler
       Policies: AWSLambdaDynamoDBExecutionRole
       Tracing: Active
+      Environment:
+        Variables:
+          API_KEY: !Ref ApiKey
       Layers:
         - !Ref libs
       Events:

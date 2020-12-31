@@ -10,7 +10,10 @@
         "ApproximateCreationDateTime": 1609350156.0,
         "Keys": {
           "PK": {
-            "S": "a1274ad5bc21ed2e02636e6bb1f8bc584ccb19f3"
+            "S": "TR#a1274ad5bc21ed2e02636e6bb1f8bc584ccb19f3"
+          },
+          "SK": {
+            "S": "TR#a1274ad5bc21ed2e02636e6bb1f8bc584ccb19f3"
           }
         },
         "NewImage": {
@@ -20,8 +23,14 @@
           "triggerEvents": {
             "S": "[{\"price\":\"0\",\"instrument\":\"someEpic\",\"meta\":{\"id\":\"d082bf55-4481-4565-aa03-9bb6520ffac9\",\"timestamp\":1609350155},\"instrument_name\":\"nameOf-someEpic\"}]"
           },
-          "PK": {
+          "triggerId": {
             "S": "a1274ad5bc21ed2e02636e6bb1f8bc584ccb19f3"
+          },
+          "PK": {
+            "S": "TR#a1274ad5bc21ed2e02636e6bb1f8bc584ccb19f3"
+          },
+          "SK": {
+            "S": "TR#a1274ad5bc21ed2e02636e6bb1f8bc584ccb19f3"
           }
         },
         "OldImage": {
@@ -29,7 +38,10 @@
             "S": "{\"epic\": \"someEpic\", \"price\": \"4567\", \"direction\": \"UNDER\"}"
           },
           "PK": {
-            "S": "a1274ad5bc21ed2e02636e6bb1f8bc584ccb19f3"
+            "S": "TR#a1274ad5bc21ed2e02636e6bb1f8bc584ccb19f3"
+          },
+          "SK": {
+            "S": "TR#a1274ad5bc21ed2e02636e6bb1f8bc584ccb19f3"
           }
         },
         "SequenceNumber": "37122100000000002375818630",

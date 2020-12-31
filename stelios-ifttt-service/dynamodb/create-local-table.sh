@@ -10,8 +10,8 @@ echo creating table $TNAME
 #https://stackoverflow.com/questions/37357397/how-to-create-dynamodb-global-secondary-index-using-aws-cli
 aws dynamodb create-table \
     --table-name ${TNAME} \
-    --attribute-definitions AttributeName=PK,AttributeType=S  \
-    --key-schema AttributeName=PK,KeyType=HASH \
+    --attribute-definitions AttributeName=PK,AttributeType=S AttributeName=SK,AttributeType=S \
+    --key-schema AttributeName=PK,KeyType=HASH AttributeName=SK,KeyType=RANGE \
     --provisioned-throughput ReadCapacityUnits=50,WriteCapacityUnits=50 \
     --stream-specification StreamEnabled=true,StreamViewType=NEW_AND_OLD_IMAGES\
     --endpoint-url http://localhost:8000

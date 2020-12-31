@@ -10,6 +10,15 @@ from botocore.exceptions import ClientError
 patch_all()
 
 table_name = os.environ['DYNAMO_TABLE']
+#print(os.environ)
+if(os.environ.get('AWS_SAM_LOCAL','false') == 'true'):
+    # the endpoint has to match the name from docker ps
+    # of an image running in the docker-network supplied to start-api
+    print(f"local connect to table='{table_name}'")
+    table=boto3.resource('dynamodb',endpoint_url="http://dynamodb-local:8000/").Table(table_name)
+else:
+    print(f"normal connect to table='{table_name}'")
+    table=boto3.resource('dynamodb').Table(table_name)
 
 def iftttError(code, error):
     """lambda response on error
@@ -64,15 +73,6 @@ def lambda_handler(event, context):
     print(f"method={method}")
     print(f"table_name={table_name}")
 
-    #print(os.environ)
-    if(os.environ.get('AWS_SAM_LOCAL','false') == 'true'):
-        # the endpoint has to match the name from docker ps
-        # of an image running in the docker-network supplied to start-api
-        print(f"local connect to table='{table_name}'")
-        table=boto3.resource('dynamodb',endpoint_url="http://dynamodb-local:8000/").Table(table_name)
-    else:
-        print(f"normal connect to table='{table_name}'")
-        table=boto3.resource('dynamodb').Table(table_name)
 
     
     if method == "DELETE":
@@ -83,8 +83,8 @@ def lambda_handler(event, context):
         try:
             #see https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/dynamodb.html#DynamoDB.Table.delete_item
             response = table.delete_item(
-                Key={'PK':trigger_id},
-                ConditionExpression=Attr('PK').eq(trigger_id),
+                Key={'PK':f"TR#{trigger_id}", "SK":f"TR#{trigger_id}"},
+                ConditionExpression=Attr('PK').eq(Attr('SK')),
             )
         except ClientError as e:
             print(f"clientError={e}")
@@ -103,7 +103,7 @@ def lambda_handler(event, context):
         print(f"triggerId={trigger_id}")
 
         response = table.get_item(
-            Key={'PK':trigger_id},
+            Key={'PK':f"TR#{trigger_id}", "SK":f"TR#{trigger_id}"},
             ProjectionExpression="triggerEvents"
         )
         print(f"response={response}")
@@ -117,7 +117,9 @@ def lambda_handler(event, context):
             #todo validate trigger fields
             response = table.put_item(
                 Item={
-                    'PK': trigger_id,
+                    'PK':f"TR#{trigger_id}", 
+                    "SK":f"TR#{trigger_id}",
+                    'triggerId': trigger_id,
                     #hacky string way to avoid having multiple columns
                     'triggerFields': json.dumps(triggerFields),
                 },

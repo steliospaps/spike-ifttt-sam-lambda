@@ -93,6 +93,7 @@ public class DummyAlerter implements Alerter{
 		log.info("triggerAlert - pk={} te={}",pk,te);
 		Trigger toUpdate = new Trigger();
 		toUpdate.setPK(pk);
+		toUpdate.setSK(pk);//same for trigger entity
 		toUpdate.setTriggerEvents(jaxbMapper.writeValueAsString(List.of(te)));
 		dynamoDBMapper.save(toUpdate);//this updates non null fields (SaveBehavior.UPDATE_SKIP_NULL_ATTRIBUTES)
 

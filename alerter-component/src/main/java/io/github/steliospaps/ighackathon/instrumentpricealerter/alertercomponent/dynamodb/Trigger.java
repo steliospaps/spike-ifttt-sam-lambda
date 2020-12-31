@@ -14,7 +14,10 @@ public class Trigger {
 	//If I omit the attributeName is does not work
 	@Getter(onMethod = @__({@DynamoDBHashKey(attributeName = "PK")}))
 	private String PK;
+	@Getter(onMethod = @__({@DynamoDBHashKey(attributeName = "SK")}))
+	private String SK;
 	
+	private String triggerId;
 	/**
 	 * a string that can be parsed to a json object
 	 * <pre>
