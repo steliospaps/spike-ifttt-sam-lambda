@@ -13,11 +13,8 @@ Globals:
     Runtime: python3.8
     Timeout: 3
     Environment:
-        Variables: # these will be important later
+        Variables: 
             DYNAMO_TABLE: !Ref TriggersTable
-            API_KEY: !Ref ApiKey
-            #DB_ENDPOINT: http://dynamodb.us-east-1.amazonaws.com
-            #REGION_NAME: us-east-1
 
 Parameters:
   ApiKey: 
@@ -65,6 +62,8 @@ Resources:
     Properties:
       CodeUri: token_auth/
       Handler: app.lambda_handler
+      Environment:
+        API_KEY: !Ref ApiKey
   StatusFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -104,8 +103,7 @@ Resources:
       Layers:
         - !Ref libs
       Environment:
-        Variables:
-          DO_NOT_RESEND: false #true|false if true will not resend something twice
+        API_KEY: !Ref ApiKey
       Events:
         poll:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
