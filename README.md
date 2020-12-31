@@ -1,6 +1,7 @@
-# dynamoDB Schema (proposal)
-(not implemented yet)
 
+# about
+![architecture](./doc/architecture.png)
+# dynamoDB Schema (proposal)
 | entity | PK | SK | other fields
 |---|---|---|---
 |trigger|TR#\<triggerID\>|TR#\<triggerID\>|triggerId:S, triggerFields:S(stringifiedJson), triggerEvents:S(StringifiedJson)
