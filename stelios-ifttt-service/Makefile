@@ -26,10 +26,10 @@ local-clean:  ## cleanup local resources (such as dynamo db)
 
 clean: ## cleanup everything
 clean: local-clean
-	rm -rf ./aws-sam package
+	rm -rf .aws-sam package
 
 local-run:      ## start api with local dynamo db
-local-run: $(MARKER_LOCAL) package build
+local-run: $(MARKER_LOCAL) .aws-sam
 	sam local start-api --docker-network=local-sam
 
 package: ## refresh pacakge dependencies
@@ -37,11 +37,14 @@ package: layer_package_requirements.txt
 	rm -rf package
 	pip install --target $@/python/lib/python3.8/site-packages/ -r $^
 	
-
-build: package
+build: ## force a rebuild
+.aws-sam: $(wildcard */*.py) template.yaml
+build .aws-sam: package
 	sam build
 
-deploy:
+
+
+deploy: .aws-sam
 	test -n '$(API_KEY)' # API_KEY must be non empty
 	test -n '$(AWS_PROFILE)' # AWS_PROFILE must be non empty
 	AWS_PROFILE=$(AWS_PROFILE) sam deploy --parameter-overrides 'ApiKey=$(API_KEY)'
