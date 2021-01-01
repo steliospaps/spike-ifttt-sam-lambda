@@ -163,13 +163,13 @@ TODO: get the key from a secrets manager
 ```
 make build && AWS_PROFILE=ighackathon sam deploy --parameter-overrides 'ApiKey=XXXXX'
 #or (using default account ighackathon)
-make deploy API_KEY=XXXX 
+make deploy API_KEY_SECRET_NAME=XXXXX 
 #or 
-make deploy API_KEY=XXXX AWS_PROFILE=ighackathon
-#or 
-make build deploy API_KEY=XXXX AWS_PROFILE=ighackathon
+make deploy API_KEY_SECRET_NAME=stelios_igus_example/apikey AWS_PROFILE=ighackathon
+
 ```
-## cloud logs/demo
+## cloud 
+### dynamoDb
 ```
 #scan table
 aws --profile=ighackathon dynamodb scan --table-name SteliosTest-Stelios-EpicPriceAlert
@@ -180,7 +180,7 @@ insert update
 ```
 aws --profile=ighackathon dynamodb update-item --table-name SteliosTest-Stelios-EpicPriceAlert   --key '{"PK":{"S":"a1274ad5bc21ed2e02636e6bb1f8bc584ccb19f3"}}'   --update-expression 'SET triggerEvents = :i'   --expression-attribute-values file://<(echo '{ ":i" : {"S":"[{\"seqNo\": 1,\"data\": {\"instrument_name\":\"someName\",\"price\":\"10000\",\"instrument\":\"epic\",\"meta\": {\"id\": \"14b9-1fd2-acaa-5df5\",\"timestamp\": 1383597267}}}]"}}')
 ```
-
+### logs
 logs:
 
 ```

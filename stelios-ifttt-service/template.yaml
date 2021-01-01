@@ -17,8 +17,7 @@ Globals:
             DYNAMO_TABLE: !Ref TriggersTable
 
 Parameters:
-  ApiKey: 
-    #todo this should come from secrets manager?
+  ApiKeySecretName: 
     Type: String
     Default: dummy-api-key
 
@@ -66,9 +65,16 @@ Resources:
     Properties:
       CodeUri: token_auth/
       Handler: app.lambda_handler
+      Tracing: Active
       Environment:
         Variables:
-          API_KEY: !Ref ApiKey
+          API_KEY_SECRET: !Ref ApiKeySecretName
+      Layers:
+        - !Ref libs
+      Policies:
+        - AWSXrayWriteOnlyAccess
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${ApiKeySecretName}-??????"
   StatusFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -129,9 +135,14 @@ Resources:
       Tracing: Active
       Environment:
         Variables:
-          API_KEY: !Ref ApiKey
+          API_KEY_SECRET: !Ref ApiKeySecretName
+          DO_NOT_SEND: false
       Layers:
         - !Ref libs
+      Policies:
+        - AWSXrayWriteOnlyAccess
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${ApiKeySecretName}-??????"
       Events:
         Stream:
           Type: DynamoDB

@@ -51,7 +51,7 @@ build .aws-sam: package
 
 
 deploy: .aws-sam
-	test -n '$(API_KEY)' # API_KEY must be non empty
+	test -n '$(API_KEY_SECRET_NAME)' # API_KEY_SECRET_NAME must be non empty
 	test -n '$(AWS_PROFILE)' # AWS_PROFILE must be non empty
-	AWS_PROFILE=$(AWS_PROFILE) sam deploy --parameter-overrides 'ApiKey=$(API_KEY)'
+	AWS_PROFILE=$(AWS_PROFILE) sam deploy --parameter-overrides 'ApiKeySecretName=$(API_KEY_SECRET_NAME)'
 	
