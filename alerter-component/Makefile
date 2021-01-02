@@ -19,5 +19,6 @@ COPILOT=copilot
 build: ## build java artifacts
 	./gradlew clean test assemble
 
-deploy: build ## deploy the COPILOT_SVC app to the COPILOT_ENV environment
+deploy: build
+deploy: ## deploy the COPILOT_SVC app to the COPILOT_ENV environment
 	AWS_PROFILE=$(AWS_PROFILE) $(COPILOT) svc deploy -n $(COPILOT_SVC) --env $(COPILOT_ENV)
