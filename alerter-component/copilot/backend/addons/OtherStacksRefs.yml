@@ -40,7 +40,7 @@ Resources:
           - ''
           - - !ImportValue "SteliosTest-TriggersTableName"
             - '-stream-lease'
-  MyTableAccessPolicy:
+  MyAccessPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
       PolicyDocument:
@@ -80,6 +80,11 @@ Resources:
             - ''
             - - !ImportValue "SteliosTest-TriggersTable"
               - '/stream/*'
+         - Sid: PutMetrics
+           Effect: Allow
+           Action:
+            - cloudwatch:PutMetricData
+           Resource: "*"
 #              #- dynamodb:BatchGet*
 #              - dynamodb:DescribeStream
 #              - dynamodb:DescribeTable
@@ -102,6 +107,6 @@ Outputs:
     Value: !ImportValue SteliosTest-TriggersTableName
 
   # 1. You also need to output the IAM ManagedPolicy so that Copilot can inject it to your ECS task role.
-  MyTableAccessPolicyArn:
+  MyAccessPolicyArn:
     Description: "The ARN of the ManagedPolicy to attach to the task role."
-    Value: !Ref MyTableAccessPolicy
+    Value: !Ref MyAccessPolicy

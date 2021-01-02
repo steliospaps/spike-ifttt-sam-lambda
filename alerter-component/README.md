@@ -47,6 +47,6 @@ copilot svc deploy
 
 copilot svc status
 
-copilot svc log --follow
+copilot svc logs --follow
 ```
 
