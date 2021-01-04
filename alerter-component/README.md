@@ -50,3 +50,6 @@ copilot svc status
 copilot svc logs --follow
 ```
 
+# secrets
+see https://aws.github.io/copilot-cli/docs/developing/secrets/
+

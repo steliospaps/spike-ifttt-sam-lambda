@@ -41,7 +41,6 @@ public class DummyAlerter implements Alerter{
 	private Duration initialDelay;
 	@Value("${app.alerter.dummy.interval}")
 	private Duration interval;
-
 	
 	@Override
 	public void onNewTrigger(String pk, TriggerFields tf) {

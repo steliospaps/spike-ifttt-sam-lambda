@@ -34,8 +34,11 @@ count: 1
 #  LOG_LEVEL: info
 #variables:
 
-#secrets:                      # Pass secrets from AWS Systems Manager (SSM) Parameter Store.
-#  GITHUB_TOKEN: GITHUB_TOKEN  # The key is the name of the environment variable, the value is the name of the SSM      parameter.
+secrets:                      # Pass secrets from AWS Systems Manager (SSM) Parameter Store.
+  WS_USERNAME: /stelios-test/igus-websocket/username
+  WS_PASSWORD: /stelios-test/igus-websocket/password
+  WS_URL: /stelios-test/igus-websocket/url
+#TODO: how can I get this out of the secrets manager?
 
 # You can override any of the values defined above by environment.
 #environments:
