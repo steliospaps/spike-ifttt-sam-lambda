@@ -11,6 +11,7 @@ sourceCompatibility = '11'
 
 repositories {
 	mavenCentral()
+	mavenLocal()
 }
 
 dependencies {
@@ -21,7 +22,11 @@ dependencies {
 	implementation 'com.amazonaws:aws-java-sdk-dynamodb:1.11.926'
 	// see https://github.com/awslabs/dynamodb-streams-kinesis-adapter
 	// https://mvnrepository.com/artifact/com.amazonaws/dynamodb-streams-kinesis-adapter
-	implementation 'com.amazonaws:dynamodb-streams-kinesis-adapter:1.5.2'	
+	implementation 'com.amazonaws:dynamodb-streams-kinesis-adapter:1.5.2'
+	//see makefile
+	implementation 'com.ig.orchestrations.us.rfed:java-binding:0.1.55'	
+	implementation 'com.ig.orchestrations.fixp:fixp-java-binding:0.1.55'
+	
 	compileOnly 'org.projectlombok:lombok:1.18.16'
 	annotationProcessor 'org.projectlombok:lombok:1.18.16'
 

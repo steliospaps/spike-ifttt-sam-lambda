@@ -2,6 +2,15 @@
 backend component that uses dynamoDB to communicate with ifttt integration
 
 # dev
+## dependencies
+It depends on com.ig.orchestrations:java-binding:0.1.55 This dependency is not published in maven central (as of 05/01/21) so you ahve to build and install locally yourself.
+
+Or:
+
+```
+make install-unpublished-dependency
+```
+
 ## run against local components
 
 ```
@@ -20,7 +29,9 @@ aws dynamodb --endpoint-url http://localhost:8000 list-tables
 in another terminal:
 
 ```
-./gradlew bootRun --args=--spring.profiles.active=local
+./gradlew bootRun --args='--spring.profiles.active=local '
+# or 
+./gradlew bootRun --args='--spring.profiles.active=local --app.ws.enabled=true --WS_URL=wss://xyz --WS_USERNAME=username --WS_PASSWORD=abcdef'
 ```
 
 Note: the first time something is inserted to the table the application fails to read it. after that it works normally.

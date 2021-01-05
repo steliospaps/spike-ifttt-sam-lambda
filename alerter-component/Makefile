@@ -5,17 +5,21 @@
 help:           ## Show this help.
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
 
-.PHONY: clean deploy build
+.PHONY: clean deploy build install-unpublished-dependency
 
 clean: ## remove all generated artifacts
 	./gradlew clean
 	rm -rf ./bin
+	rm -rf .igus
 
 COPILOT_ENV=prod
 COPILOT_SVC=backend
 COPILOT_APP=stelios-ifttt-alerter-backend
+# binaries it needs
 COPILOT=copilot
 AWS=aws
+GIT=git
+MVN=mvn
 
 build: ## build java artifacts
 	./gradlew clean test assemble
@@ -29,3 +33,12 @@ put-secret: ## set a secret in ssm for this app you have to set SECRET_NAME, SEC
 	test -n '$(SECRET_VALUE)' #define SECRET_NAME
 	$(AWS) ssm put-parameter --name='$(SECRET_NAME)' --value='$(SECRET_VALUE)' --type SecureString \
 		--tags Key=copilot-environment,Value=$(COPILOT_ENV) Key=copilot-application,Value=$(COPILOT_APP)
+
+.igus:
+	#this does not work for commits $(GIT) clone --depth 1 https://github.com/IG-Group/ig-orchestrations.git --branch 046dd02af2319b05c91aa40805ed6ddfe1b61d6b --single-branch .igus
+	$(GIT) clone https://github.com/IG-Group/ig-orchestrations.git .igus
+	cd .igus && $(GIT) checkout 046dd02af2319b05c91aa40805ed6ddfe1b61d6b
+
+install-unpublished-dependency: ## locally install the unpublished dependencies
+install-unpublished-dependency: .igus
+	cd .igus && $(MVN) install --projects ig-us-rfed/java-binding,fixp/java-binding --also-make -DskipTests
