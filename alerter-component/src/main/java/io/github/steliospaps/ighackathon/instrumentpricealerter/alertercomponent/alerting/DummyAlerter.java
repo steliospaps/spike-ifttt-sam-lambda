@@ -10,12 +10,13 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.Trigger;
+import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.MyTableRow;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.TriggerEvent;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.TriggerEvent.Meta;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.TriggerEventWrapper;
@@ -27,6 +28,7 @@ import reactor.core.publisher.Flux;
 
 @Component
 @Slf4j
+@ConditionalOnProperty("app.alerter.dummy.enabled")
 public class DummyAlerter implements Alerter{
 
 	private ConcurrentMap<String, Disposable> subscriptions=new ConcurrentHashMap<>(); 
@@ -43,7 +45,7 @@ public class DummyAlerter implements Alerter{
 	private Duration interval;
 	
 	@Override
-	public void onNewTrigger(String pk, TriggerFields tf) {
+	public void onNewTrigger(String pk, TriggerFields tf, boolean hasFired) {
 		Disposable d1 = Flux.interval(interval)//
 			.map(i->i+1)//
 			.startWith(0L)//
@@ -90,7 +92,7 @@ public class DummyAlerter implements Alerter{
 		// This can be addressed by changing the model to use a TTL field that gets set by the deletion
 		// instead of deleting 
 		log.info("triggerAlert - pk={} te={}",pk,te);
-		Trigger toUpdate = new Trigger();
+		MyTableRow toUpdate = new MyTableRow();
 		toUpdate.setPK(pk);
 		toUpdate.setSK(pk);//same for trigger entity
 		toUpdate.setTriggerEvents(jaxbMapper.writeValueAsString(List.of(te)));

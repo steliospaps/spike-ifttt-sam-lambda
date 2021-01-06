@@ -12,8 +12,9 @@ public interface Alerter {
 	 * 
 	 * @param pk trigger id
 	 * @param tf trigger fields
+	 * @param hasFired true if it has ever fired
 	 */
-	void onNewTrigger(String pk, TriggerFields tf);
+	void onNewTrigger(String pk, TriggerFields tf, boolean hasFired);
 	/**
 	 * During startup this might be called before onNewTrigger
 	 * @param pk trigger id

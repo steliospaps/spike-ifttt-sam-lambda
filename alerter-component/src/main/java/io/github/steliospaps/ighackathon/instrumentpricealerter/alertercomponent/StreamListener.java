@@ -40,7 +40,7 @@ import com.amazonaws.services.kinesis.metrics.interfaces.MetricsLevel;
 import com.amazonaws.services.kinesis.model.Record;
 
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.alerting.Alerter;
-import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.Trigger;
+import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.MyTableRow;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.TriggerFields;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -72,14 +72,14 @@ public class StreamListener implements HealthIndicator {
 					switch (o.getEventName()) {
 					case "INSERT": {
 
-						Trigger tr = dynamoDbMapper.marshallIntoObject(Trigger.class, o.getDynamodb().getNewImage());
+						MyTableRow tr = dynamoDbMapper.marshallIntoObject(MyTableRow.class, o.getDynamodb().getNewImage());
 						if (TriggersUtil.isTriggerRecord(tr)) {
 							TriggerFields tf = Optional.ofNullable(tr.getTriggerFields())//
 									.map(Util.sneakyF(str -> jaxbMapper.readValue(str, TriggerFields.class)))//
 									.orElse(null);
 							log.info("new triggerId={} triggerFields={}", tr.getPK(), tf);
 							if (tf != null) {
-								alerter.onNewTrigger(tr.getPK(), tf);
+								alerter.onNewTrigger(tr.getPK(), tf, tr.getTriggerEvents()!=null);
 							} else {
 								log.warn("skipping {} (no triggerFields)", tr);
 							}
@@ -91,7 +91,7 @@ public class StreamListener implements HealthIndicator {
 					case "MODIFY":
 						continue;
 					case "REMOVE": {
-						Trigger tr = dynamoDbMapper.marshallIntoObject(Trigger.class, o.getDynamodb().getOldImage());
+						MyTableRow tr = dynamoDbMapper.marshallIntoObject(MyTableRow.class, o.getDynamodb().getOldImage());
 						if (TriggersUtil.isTriggerRecord(tr)) {
 							log.info("delete triggerId={} triggerFields={}", tr.getPK());
 							alerter.onDeleteTrigger(tr.getPK());

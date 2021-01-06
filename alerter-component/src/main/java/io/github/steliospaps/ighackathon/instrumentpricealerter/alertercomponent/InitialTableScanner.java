@@ -17,7 +17,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedScanList;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.alerting.Alerter;
-import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.Trigger;
+import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.MyTableRow;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.TriggerFields;
 import lombok.extern.slf4j.Slf4j;
 
@@ -51,7 +51,7 @@ public class InitialTableScanner {
 		scanExpression.setLimit(scanChunk);
 		// TODO: optimize this for parallel scan
 		// TODO: how to deal with more results than jvm memory? (shard?)
-		PaginatedScanList<Trigger> scan = dynamoDbMapper.scan(Trigger.class, scanExpression);
+		PaginatedScanList<MyTableRow> scan = dynamoDbMapper.scan(MyTableRow.class, scanExpression);
 
 		scan//
 				.forEach(Util.sneakyC(tr -> {
@@ -59,7 +59,8 @@ public class InitialTableScanner {
 					if (TriggersUtil.isTriggerRecord(tr)) {
 						log.info("looks like a trigger");
 						alerter.onNewTrigger(tr.getPK(),
-								jaxbMapper.readValue(tr.getTriggerFields(), TriggerFields.class));
+								jaxbMapper.readValue(tr.getTriggerFields(), TriggerFields.class),
+								tr.getTriggerEvents()!=null);
 
 					} else {
 						log.info("skipping");

@@ -7,19 +7,23 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.UUID;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.WebSocketSession;
 import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -30,10 +34,18 @@ import com.ig.orchestrations.fixp.Negotiate;
 import com.ig.orchestrations.fixp.NegotiationResponse;
 import com.ig.orchestrations.fixp.UnsequencedHeartbeat;
 import com.ig.orchestrations.us.rfed.fields.SecurityListRequestType;
+import com.ig.orchestrations.us.rfed.fields.SecurityRequestResult;
 import com.ig.orchestrations.us.rfed.fields.SubscriptionRequestType;
+import com.ig.orchestrations.us.rfed.groups.QuotReqGrp;
+import com.ig.orchestrations.us.rfed.groups.SecListGrp;
+import com.ig.orchestrations.us.rfed.messages.Quote;
+import com.ig.orchestrations.us.rfed.messages.QuoteRequest;
+import com.ig.orchestrations.us.rfed.messages.SecurityList;
 import com.ig.orchestrations.us.rfed.messages.SecurityListRequest;
 
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.Util;
+import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.events.InstrumentReceivedFromIGEvent;
+import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.events.PriceUpdateEvent;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -51,8 +63,12 @@ public class WebsocketClient {
 	@Value("${app.ws.username}")
 	private String username;
 	
+	@Autowired
+	private ApplicationEventPublisher publisher;
 	
 	private DateTimeFormatter fmt= DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
+	
+	
 	
 	@Autowired
 	private ObjectMapper mapper;
@@ -96,7 +112,7 @@ public class WebsocketClient {
 
 	private Flux<String> jsonFluxHandler(Flux<JsonNode> flux) {
 		
-		return flux.flatMap(jsonNode ->{
+		return flux.flatMap(Util.sneakyF(jsonNode ->{
 			log.info("received message:", jsonNode);
 			String messageType = getMessageType(jsonNode);
 			
@@ -108,39 +124,88 @@ public class WebsocketClient {
 				return Flux.just(new Establish(uuid, (System.currentTimeMillis()*1_000_000L),
 						heartBeatInterval.toMillis()+10_000L, null));
 			case "EstablishmentAck":
-				log.info("will request SecurityList");
-				SecurityListRequest req = new SecurityListRequest();
-				req.setSecurityReqID("req-1");
-				req.setSecurityListRequestType(SecurityListRequestType.ALL_SECURITIES);
-				req.setSubscriptionRequestType(SubscriptionRequestType.SNAPSHOT);
-				return Flux.just(req);
+				return makeSecurityListRequest();
 			case "SecurityList":
-				log.info("got securityList");
+				return handleSecurityList(mapper.treeToValue(jsonNode, SecurityList.class));
+			case "Quote":
+				publishPrices(mapper.treeToValue(jsonNode, Quote.class));
 				return Flux.empty();
 			default:
 				log.info("ignoring msg={}",jsonNode);
 				return Flux.empty();
 			}
-		})//
+		}))//
 			.startWith(loginMessage())//
 			.switchMap(msg -> Flux.interval(heartBeatInterval)//
 					.<Object>map(i -> new UnsequencedHeartbeat())//
 					.startWith(msg))
-			.map(Util.sneakyF(msg -> {
-				Class<? extends Object> cls = msg.getClass();
-					String messageName = cls.getSimpleName();
-					ObjectNode json = (ObjectNode) mapper.valueToTree(msg);
-				if(cls.getPackageName().equals(Negotiate.class.getPackageName())) {
-					json.put("MessageType",messageName);
-				} else if(cls.getPackageName().equals(SecurityListRequest.class.getPackageName())) {
-					json.put("MsgType",messageName);
-					json.put("SendingTime", ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC)//
-							.format(fmt));
-					json.put("ApplVerID", "FIX50SP2");
-				}
-				return mapper.writeValueAsString(json);
-			}))
+			.map(Util.sneakyF(msg -> toJsonEnriched(msg)))
 			;	
+	}
+
+	private void publishPrices(Quote quote) {
+		publisher.publishEvent(PriceUpdateEvent.builder()
+				.epic(quote.getQuoteReqID())//sending epic getting back epic saves us from having to keep a local map
+				.bid(quote.getBidPx())//
+				.offer(quote.getOfferPx())//
+				.build());
+	}
+
+	private String toJsonEnriched(Object msg) throws JsonProcessingException {
+		Class<? extends Object> cls = msg.getClass();
+			String messageName = cls.getSimpleName();
+			ObjectNode json = (ObjectNode) mapper.valueToTree(msg);
+		if(cls.getPackageName().equals(Negotiate.class.getPackageName())) {
+			json.put("MessageType",messageName);
+		} else if(cls.getPackageName().equals(SecurityListRequest.class.getPackageName())) {
+			json.put("MsgType",messageName);
+			json.put("SendingTime", ZonedDateTime.now().withZoneSameInstant(ZoneOffset.UTC)//
+					.format(fmt));
+			json.put("ApplVerID", "FIX50SP2");
+		}
+		return mapper.writeValueAsString(json);
+	}
+
+	private Publisher<? extends Object> handleSecurityList(SecurityList securityList) {
+		log.info("got securityList");
+		if(securityList.getSecurityRequestResult() != SecurityRequestResult.VALID_REQUEST) {
+			log.error("bad SecurityRequestResult will error SecurityRequestResult={}",securityList.getSecurityRequestResult());
+			return Flux.error(new RuntimeException("securityListRequest rejected"));
+		}
+		
+		securityList.getSecListGrp().stream()//
+			.forEach(sec -> publishInstrument(sec));
+		
+		return Flux.fromStream(securityList.getSecListGrp().stream()//
+				.map(sec -> makeQuoteRequest(sec)));
+	}
+
+	private void publishInstrument(SecListGrp sec) {
+		publisher.publishEvent(InstrumentReceivedFromIGEvent.builder()//
+				.symbol(sec.getSymbol())//
+				.epic(sec.getSecurityID())//
+				.description(sec.getSecurityDesc())//
+				.build());
+	}
+
+	private QuoteRequest makeQuoteRequest(SecListGrp sec) {
+		QuoteRequest qr = new QuoteRequest();
+		qr.setQuoteReqID(sec.getSecurityID());
+		qr.setSubscriptionRequestType(SubscriptionRequestType.SNAPSHOT_AND_UPDATES);
+		QuotReqGrp req = new QuotReqGrp();
+		req.setSecurityID(sec.getSecurityID());
+		req.setSecurityIDSource(sec.getSecurityIDSource());
+		qr.setQuotReqGrp(List.of(req));
+		return qr;
+	}
+
+	private Publisher<? extends Object> makeSecurityListRequest() {
+		log.info("will request SecurityList");
+		SecurityListRequest req = new SecurityListRequest();
+		req.setSecurityReqID("req-1");
+		req.setSecurityListRequestType(SecurityListRequestType.ALL_SECURITIES);
+		req.setSubscriptionRequestType(SubscriptionRequestType.SNAPSHOT);
+		return Flux.just(req);
 	}
 
 	private String getMessageType(JsonNode jsonNode) {
