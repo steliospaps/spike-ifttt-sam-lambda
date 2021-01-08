@@ -112,7 +112,7 @@ public class PriceAlerter implements Alerter {
 
 	@EventListener
 	public void onPriceTick(PriceUpdateEvent tick) {
-		log.info("onPriceTick {}", tick);
+		log.debug("onPriceTick {}", tick);
 		subscriptionsByEpic.getOrDefault(tick.getEpic(), Set.of())//
 				.stream()//
 				.forEach(sub -> {

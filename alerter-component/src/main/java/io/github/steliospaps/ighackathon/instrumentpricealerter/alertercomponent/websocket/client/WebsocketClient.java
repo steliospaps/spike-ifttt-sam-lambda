@@ -107,20 +107,22 @@ public class WebsocketClient {
 		
 		return ws.send(ws.receive()
 				.map(WebSocketMessage::getPayloadAsText)//
-				.log("ws-input")//
+				.log("ws-input",Level.FINEST,SignalType.ON_NEXT)//
+				.log("ws-input",Level.INFO,SignalType.ON_SUBSCRIBE,SignalType.CANCEL,SignalType.ON_COMPLETE,SignalType.ON_ERROR,SignalType.AFTER_TERMINATE)//
 				.map(Util.sneakyF(str -> mapper.readTree(str)))//
 				.transform(flux -> jsonFluxHandler(flux))//
-				.log("ws-output")//
+				.log("ws-output",Level.FINEST,SignalType.ON_NEXT)//
+				.log("ws-output",Level.INFO,SignalType.ON_SUBSCRIBE,SignalType.CANCEL,SignalType.ON_COMPLETE,SignalType.ON_ERROR,SignalType.AFTER_TERMINATE)//
 				.map(toSend->ws.textMessage(toSend)));
 	}
 
 	private Flux<String> jsonFluxHandler(Flux<JsonNode> flux) {
 		
 		return flux.flatMap(Util.sneakyF(jsonNode ->{
-			log.info("received message:", jsonNode);
+			log.debug("received message:", jsonNode);
 			String messageType = getMessageType(jsonNode);
 			
-			log.info("messageType: {}",messageType);
+			log.debug("messageType: {}",messageType);
 			
 			switch(messageType) {
 			case "NegotiationResponse":
@@ -215,6 +217,7 @@ public class WebsocketClient {
 	private String getMessageType(JsonNode jsonNode) {
 		JsonNode node = jsonNode.get("MessageType");
 		if(node!=null) {
+			log.info("session-level: {}",jsonNode);
 			return node.asText();
 		}
 		node = jsonNode.get("MsgType");
