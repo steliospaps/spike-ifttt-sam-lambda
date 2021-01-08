@@ -57,7 +57,7 @@
 			"response": []
 		},
 		{
-			"name": "triggers/instrument_price",
+			"name": "triggers/instrument_price POST",
 			"protocolProfileBehavior": {
 				"disabledSystemHeaders": {
 					"content-type": true
@@ -79,7 +79,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"trigger_identity\": \"{{triggerIdentity}}\",\n  \"triggerFields\": {\n    \"epic\": \"epic1\",\n    \"direction\": \"OVER\",\n    \"price\":\"10,000.00\"\n  },\n  \"limit\": 10,\n  \"ifttt_source\": {\n    \"id\": \"2\",\n    \"url\": \"https://ifttt.com/myrecipes/personal/2\"\n  },\n  \"user\": {\n    \"timezone\": \"America/Los_Angeles\"\n  }\n}"
+					"raw": "{\n  \"trigger_identity\": \"{{triggerIdentity}}\",\n  \"triggerFields\": {\n    \"epic\": \"CS.D.MXNJPY.CZD.IP\",\n    \"direction\": \"OVER\",\n    \"price\":\"5.2\"\n  },\n  \"limit\": 10,\n  \"ifttt_source\": {\n    \"id\": \"2\",\n    \"url\": \"https://ifttt.com/myrecipes/personal/2\"\n  },\n  \"user\": {\n    \"timezone\": \"America/Los_Angeles\"\n  }\n}"
 				},
 				"url": {
 					"raw": "{{ifttt}}/ifttt/v1/triggers/instrument_price",
@@ -97,7 +97,46 @@
 			"response": []
 		},
 		{
-			"name": "triggers/instrument_price Copy",
+			"name": "triggers/instrument_price epic GET",
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"content-type": true
+				}
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "IFTTT-Service-Key",
+						"type": "text",
+						"value": "{{token}}"
+					}
+				],
+				"url": {
+					"raw": "{{ifttt}}/ifttt/v1/triggers/instrument_price/fields/epic/options",
+					"host": [
+						"{{ifttt}}"
+					],
+					"path": [
+						"ifttt",
+						"v1",
+						"triggers",
+						"instrument_price",
+						"fields",
+						"epic",
+						"options"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "triggers/instrument_price DELETE",
 			"protocolProfileBehavior": {
 				"disabledSystemHeaders": {
 					"content-type": true
@@ -139,7 +178,6 @@
 		{
 			"listen": "prerequest",
 			"script": {
-				"id": "5dc20f62-f6d4-4a58-bad5-2fb9f92fda20",
 				"type": "text/javascript",
 				"exec": [
 					""
@@ -149,7 +187,6 @@
 		{
 			"listen": "test",
 			"script": {
-				"id": "332b1024-fef5-4c1e-8331-2fb5e3f6c36b",
 				"type": "text/javascript",
 				"exec": [
 					""
@@ -159,11 +196,9 @@
 	],
 	"variable": [
 		{
-			"id": "9ce32b4d-743d-4cc6-ab07-65da78407b5a",
 			"key": "dev",
 			"value": "http://localhost:3000",
 			"disabled": true
 		}
-	],
-	"protocolProfileBehavior": {}
+	]
 }
