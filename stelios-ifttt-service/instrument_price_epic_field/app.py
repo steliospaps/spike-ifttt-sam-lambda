@@ -78,29 +78,25 @@ def lambda_handler(event, context):
 
 
     
-    if method == "GET":
-
-        try:
-            #see https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/dynamodb.html#DynamoDB.Table.delete_item
-            response = table.query(
-                KeyConditionExpression=Key("PK").eq("INSTRUMENT") & Key("SK").begins_with("EPIC#"),
-                ProjectionExpression="symbol, epic",
-                #Key={'PK':"INSTRUMENT", "SK"},
-                #ConditionExpression=Attr('PK').eq(Attr('SK')),
-            )
-        except ClientError as e:
-            print(f"clientError={e}")
-            raise
-        print(f"response={response}")
-        data=[]
-        for item in sorted(response['Items'], key=lambda k: k['symbol']):
-            data.append({
-                'label':item['symbol'],
-                'value':item['epic']
-                })
-        return {
-            "statusCode": 200,
-            "body":json.dumps({'data':data}),
-        }
-    else :
-        return iftttError(400, f"unexpected httpMethod {method}")
+    try:
+        #see https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/dynamodb.html#DynamoDB.Table.delete_item
+        response = table.query(
+            KeyConditionExpression=Key("PK").eq("INSTRUMENT") & Key("SK").begins_with("EPIC#"),
+            ProjectionExpression="symbol, epic",
+            #Key={'PK':"INSTRUMENT", "SK"},
+            #ConditionExpression=Attr('PK').eq(Attr('SK')),
+        )
+    except ClientError as e:
+        print(f"clientError={e}")
+        raise
+    print(f"response={response}")
+    data=[]
+    for item in sorted(response['Items'], key=lambda k: k['symbol']):
+        data.append({
+            'label':item['symbol'],
+            'value':item['epic']
+            })
+    return {
+        "statusCode": 200,
+        "body":json.dumps({'data':data}),
+    }

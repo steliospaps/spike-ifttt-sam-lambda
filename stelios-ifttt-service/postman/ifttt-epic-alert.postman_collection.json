@@ -97,14 +97,14 @@
 			"response": []
 		},
 		{
-			"name": "triggers/instrument_price epic GET",
+			"name": "fileds instrument_price epic",
 			"protocolProfileBehavior": {
 				"disabledSystemHeaders": {
 					"content-type": true
 				}
 			},
 			"request": {
-				"method": "GET",
+				"method": "POST",
 				"header": [
 					{
 						"key": "Content-Type",
