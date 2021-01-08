@@ -9,6 +9,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
+import java.util.logging.Level;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -50,6 +51,7 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.SignalType;
 
 @Component
 @Slf4j
@@ -90,7 +92,9 @@ public class WebsocketClient {
 			.onBackpressureDrop()//otherwise it will blow up
 			.flatMap(ignore-> client.execute(url, ws ->handleWs(ws)),//
 					1)//how many concurrent connections
+			.onErrorContinue((t, o)-> log.error("will retry to connect", t))//
 			.take(resetConnectionInterval)//disconnect every 8 hours (and resubscribe)
+			.log("ws",Level.INFO,SignalType.ON_SUBSCRIBE,SignalType.CANCEL,SignalType.ON_COMPLETE,SignalType.ON_ERROR,SignalType.AFTER_TERMINATE)
 			.subscribe();
 	}
 	
