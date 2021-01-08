@@ -17,9 +17,9 @@ image:
     # The command the container runs to determine if it's healthy.
     command: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
     interval: 30s  # Time period between healthchecks. Default is 10s.
-    retries: 2      # Number of times to retry before container is deemed unhealthy. Default is 2.
+    retries: 3      # Number of times to retry before container is deemed unhealthy. Default is 2.
     timeout: 3s     # How long to wait before considering the healthcheck failed. Default is 5s.
-    start_period: 60s # Grace period within which to provide containers time to bootstrap before failed health checks count towards the maximum number of retries. Default is 0s.
+    start_period: 90s # Grace period within which to provide containers time to bootstrap before failed health checks count towards the maximum number of retries. Default is 0s.
 
 # Number of CPU units for the task.
 cpu: 256

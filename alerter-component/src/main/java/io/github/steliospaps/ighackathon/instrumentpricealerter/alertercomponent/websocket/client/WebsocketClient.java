@@ -17,6 +17,8 @@ import javax.annotation.PreDestroy;
 import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
@@ -56,7 +58,7 @@ import reactor.core.publisher.SignalType;
 @Component
 @Slf4j
 @ConditionalOnProperty(name = "app.ws.enabled", matchIfMissing = true)
-public class WebsocketClient {
+public class WebsocketClient implements HealthIndicator{
 	
 	@Value("${app.ws.url}")
 	private URI url;
@@ -80,6 +82,7 @@ public class WebsocketClient {
 	private Duration retryConnectionInterval= Duration.ofSeconds(30);
 	private Duration resetConnectionInterval = Duration.ofHours(8);
 	private Duration heartBeatInterval = Duration.ofSeconds(20);
+	private volatile boolean connected = false;
 	
 	@PostConstruct
 	public void run() {
@@ -104,7 +107,6 @@ public class WebsocketClient {
 	}
 
 	private Mono<Void> handleWs(WebSocketSession ws) {
-		
 		return ws.send(ws.receive()
 				.map(WebSocketMessage::getPayloadAsText)//
 				.log("ws-input",Level.FINEST,SignalType.ON_NEXT)//
@@ -113,7 +115,9 @@ public class WebsocketClient {
 				.transform(flux -> jsonFluxHandler(flux))//
 				.log("ws-output",Level.FINEST,SignalType.ON_NEXT)//
 				.log("ws-output",Level.INFO,SignalType.ON_SUBSCRIBE,SignalType.CANCEL,SignalType.ON_COMPLETE,SignalType.ON_ERROR,SignalType.AFTER_TERMINATE)//
-				.map(toSend->ws.textMessage(toSend)));
+				.map(toSend->ws.textMessage(toSend)))
+				.doFinally(s -> connected=false)
+				;
 	}
 
 	private Flux<String> jsonFluxHandler(Flux<JsonNode> flux) {
@@ -130,6 +134,7 @@ public class WebsocketClient {
 				return Flux.just(new Establish(uuid, (System.currentTimeMillis()*1_000_000L),
 						heartBeatInterval.toMillis()+10_000L, null));
 			case "EstablishmentAck":
+				connected=true;
 				return makeSecurityListRequest();
 			case "SecurityList":
 				return handleSecurityList(mapper.treeToValue(jsonNode, SecurityList.class));
@@ -231,6 +236,15 @@ public class WebsocketClient {
 	private Object loginMessage() {
 		return new Negotiate(uuid,(System.currentTimeMillis()*1_000_000L),FlowType.UNSEQUENCED,
 				new IgExtensionCredentials("login",username+":"+password),null); 
+	}
+
+	@Override
+	public Health health() {
+		if(connected) {
+			return Health.up().build();
+		} else {
+			return Health.down().build();
+		}
 	}
 
 }
