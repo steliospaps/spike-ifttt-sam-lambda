@@ -17,3 +17,4 @@ you need:
 - make
 - sam cli
 - docker
+- python3 (and pip)
