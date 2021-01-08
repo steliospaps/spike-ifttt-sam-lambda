@@ -9,6 +9,8 @@ Description: >
 
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
+  Api:
+    OpenApiVersion: 3.0.1 #to get rid of 'Stage'
   Function:
     Runtime: python3.8
     Timeout: 3
@@ -99,6 +101,27 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /ifttt/v1/test/setup
             Method: post
+  GetEpicsFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: instrument_price_epic_field/
+      Handler: app.lambda_handler
+      #TODO: make this more specific Policies: AmazonDynamoDBFullAccess # default IAM policy that allows the lambda to read and write to our soon to be defined Dynamo instance
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName:
+              !Ref TriggersTable
+        - AWSXrayWriteOnlyAccess
+      Tracing: Active
+      Layers:
+        - !Ref libs
+      Events:
+        get:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /ifttt/v1/triggers/instrument_price/fields/epic/options
+            Method: get
   TriggerFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:

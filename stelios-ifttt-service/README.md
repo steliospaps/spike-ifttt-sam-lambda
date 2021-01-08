@@ -159,13 +159,12 @@ make clean
 ```
 
 # deploy
-TODO: get the key from a secrets manager
 ```
 make build && AWS_PROFILE=ighackathon sam deploy --parameter-overrides 'ApiKey=XXXXX'
 #or (using default account ighackathon)
 make deploy API_KEY_SECRET_NAME=XXXXX 
 #or 
-make deploy API_KEY_SECRET_NAME=stelios_igus_example/apikey AWS_PROFILE=ighackathon
+AWS_PROFILE=ighackathon make deploy API_KEY_SECRET_NAME=stelios_igus_example/apikey 
 
 ```
 ## cloud 

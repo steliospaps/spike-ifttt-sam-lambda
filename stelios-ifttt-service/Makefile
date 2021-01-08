@@ -49,9 +49,8 @@ build .aws-sam: package
 	sam build
 
 
-
+deploy: ## deploy app you need to provide API_KEY_SECRET_NAME (and AWS_PROFILE in the env)
 deploy: .aws-sam
 	test -n '$(API_KEY_SECRET_NAME)' # API_KEY_SECRET_NAME must be non empty
-	test -n '$(AWS_PROFILE)' # AWS_PROFILE must be non empty
-	AWS_PROFILE=$(AWS_PROFILE) sam deploy --parameter-overrides 'ApiKeySecretName=$(API_KEY_SECRET_NAME)'
+	sam deploy --parameter-overrides 'ApiKeySecretName=$(API_KEY_SECRET_NAME)'
 	
