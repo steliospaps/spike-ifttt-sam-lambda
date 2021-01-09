@@ -38,7 +38,9 @@ secrets:                      # Pass secrets from AWS Systems Manager (SSM) Para
   WS_USERNAME: /stelios-test/igus-websocket/username
   WS_PASSWORD: /stelios-test/igus-websocket/password
   WS_URL: /stelios-test/igus-websocket/url
-#TODO: how can I get this out of the secrets manager?
+#TODO: how can I get this out of the secrets manager? The copilot documentation
+# implies that I have to tag ssm secrets, and the ssm docs talk about how to reference
+# secrets manager keys from ssm (but how do I tag them?)
 
 # You can override any of the values defined above by environment.
 #environments:

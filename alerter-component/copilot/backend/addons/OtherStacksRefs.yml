@@ -35,7 +35,8 @@ Resources:
       ProvisionedThroughput:
         ReadCapacityUnits: 1
         WriteCapacityUnits: 1
-      TableName: 
+      TableName: #TODO: I want the name of the sam stack to come from elsewere, but I cannot figure out how to pass arbitrary parameters to 
+                 # addons
         Fn::Join:
           - ''
           - - !ImportValue "SteliosTest-TriggersTableName"

@@ -4,7 +4,6 @@ Description: >
   stelios-ifttt-service
 
   Sample SAM Template for stelios-ifttt-service
-#TODO: add authorisers for custom api key header
 # https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-controlling-access-to-apis-lambda-authorizer.html
 
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
@@ -106,7 +105,6 @@ Resources:
     Properties:
       CodeUri: instrument_price_epic_field/
       Handler: app.lambda_handler
-      #TODO: make this more specific Policies: AmazonDynamoDBFullAccess # default IAM policy that allows the lambda to read and write to our soon to be defined Dynamo instance
       Policies:
         - DynamoDBReadPolicy:
             TableName:
@@ -127,7 +125,6 @@ Resources:
     Properties:
       CodeUri: instrument_price/
       Handler: app.lambda_handler
-      #TODO: make this more specific Policies: AmazonDynamoDBFullAccess # default IAM policy that allows the lambda to read and write to our soon to be defined Dynamo instance
       Policies:
         - DynamoDBCrudPolicy:
             TableName:

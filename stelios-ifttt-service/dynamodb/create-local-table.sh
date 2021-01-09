@@ -6,7 +6,6 @@ echo deleting table $TNAME
 aws dynamodb delete-table --table-name ${TNAME} --endpoint-url http://localhost:8000 > /dev/null 2>&1
 
 echo creating table $TNAME
-# TODO: don't use this when creating dynamo db table in aws.  Need to specify --billing-mode PAY_PER_REQUEST and no --provisioned-throughput or ProvisionedThroughput
 #https://stackoverflow.com/questions/37357397/how-to-create-dynamodb-global-secondary-index-using-aws-cli
 aws dynamodb create-table \
     --table-name ${TNAME} \

@@ -21,7 +21,7 @@ else:
     print(f"normal connect to table='{table_name}'")
     table=boto3.resource('dynamodb').Table(table_name)
 
-#TODO make this into a library?
+#TODO make this into a library? (make a common functions layer)
 
 def iftttError(code, error):
     """lambda response on error
