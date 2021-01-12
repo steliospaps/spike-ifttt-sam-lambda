@@ -7,10 +7,13 @@ help:           ## Show this help.
 
 .PHONY: clean deploy build install-unpublished-dependency
 
+INSTALL_DEPS_MARKER=.installed-igus
+
 clean: ## remove all generated artifacts
 	./gradlew clean
 	rm -rf ./bin
 	rm -rf .igus
+	rm -f $(INSTALL_DEPS_MARKER)
 
 COPILOT_ENV=prod
 COPILOT_SVC=backend
@@ -22,7 +25,7 @@ GIT=git
 MVN=mvn
 
 build: ## build java artifacts
-build: .igus
+build: $(INSTALL_DEPS_MARKER)
 	./gradlew clean test assemble
 
 deploy: build
@@ -40,6 +43,8 @@ put-secret: ## set a secret in ssm for this app you have to set SECRET_NAME, SEC
 	$(GIT) clone https://github.com/IG-Group/ig-orchestrations.git .igus
 	cd .igus && $(GIT) checkout 046dd02af2319b05c91aa40805ed6ddfe1b61d6b
 
+
 install-unpublished-dependency: ## locally install the unpublished dependencies
-install-unpublished-dependency: .igus
+install-unpublished-dependency $(INSTALL_DEPS_MARKER): .igus
 	cd .igus && $(MVN) install --projects ig-us-rfed/java-binding,fixp/java-binding --also-make -DskipTests
+	touch $(INSTALL_DEPS_MARKER)
