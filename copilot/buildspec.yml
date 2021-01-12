@@ -15,7 +15,7 @@ phases:
   build:
     commands:
       - echo "Run your tests"
-      - cd alerter-component && make build
+      - (cd alerter-component && make build)
   post_build:
     commands:
       - ls -l
