@@ -46,5 +46,5 @@ put-secret: ## set a secret in ssm for this app you have to set SECRET_NAME, SEC
 
 install-unpublished-dependency: ## locally install the unpublished dependencies
 install-unpublished-dependency $(INSTALL_DEPS_MARKER): .igus
-	cd .igus && $(MVN) install --projects ig-us-rfed/java-binding,fixp/java-binding --also-make -DskipTests
+	cd .igus && $(MVN) install --projects ig-us-rfed/json-schema,fixp/json-schema,ig-us-rfed/java-binding,fixp/java-binding --also-make -DskipTests
 	touch $(INSTALL_DEPS_MARKER)
