@@ -23,11 +23,11 @@ you need:
 Assuming git and make installed:
 
 ```
-sudo apt install docker.io docker-compose awscli python3-pip
+sudo apt install maven docker.io docker-compose awscli python3-pip
 ```
-Follow instructions (to install sam cli)[https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install-linux.html]
+Follow instructions (to install sam cli)[https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install-linux.html] in particular about installing brew
 
 ```
-cd stelios-fttt-service
-make local-run
+brew install aws/tap/aws-sam-cli
+brew install aws/tap/copilot-cli
 ```

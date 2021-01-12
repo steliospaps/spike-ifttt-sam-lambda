@@ -22,6 +22,7 @@ GIT=git
 MVN=mvn
 
 build: ## build java artifacts
+build: .igus
 	./gradlew clean test assemble
 
 deploy: build
