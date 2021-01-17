@@ -13,8 +13,9 @@ public interface Alerter {
 	 * @param pk trigger id
 	 * @param tf trigger fields
 	 * @param hasFired true if it has ever fired
+	 * @param triggerType TODO
 	 */
-	void onNewTrigger(String pk, TriggerFields tf, boolean hasFired);
+	void onNewTrigger(String pk, TriggerFields tf, boolean hasFired, String triggerType);
 	/**
 	 * During startup this might be called before onNewTrigger
 	 * @param pk trigger id

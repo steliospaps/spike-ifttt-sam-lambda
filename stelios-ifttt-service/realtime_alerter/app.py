@@ -109,6 +109,9 @@ def lambda_handler(event, context):
     print("event=",event)
 
     triggerIds=set()
+
+    #TODO deal with prev_day_change (it will appear as a new TR#prev_day_change#<triggerId>,EV#<timestamp> record)
+
     for record in event.get('Records',[]):
         event_id=record['eventID']
         if record['eventName'] == "MODIFY":

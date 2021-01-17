@@ -2,9 +2,13 @@
 # about
 ![architecture](./doc/architecture.png)
 # dynamoDB Schema
+
+Note: The TTL field is named expiresOn.
+
 | entity | PK | SK | other fields
 |---|---|---|---
-|trigger|TR#\<triggerID\>|TR#\<triggerID\>|triggerId:S, triggerFields:S(stringifiedJson), triggerEvents:S(StringifiedJson)
+|trigger|TR#\<triggerType\>#\<triggerID\>|TR#\<triggerID\>|triggerId:S, <br> triggerFields:S(stringifiedJson), <br> triggerEvents:S(StringifiedJson), <br> triggerType(instrument_price\|prev_day_change), <br> expiresOn(if trigger deleted: only for triggerType=prev_day_change)
+|trigger event|TR#<triggerType\>#\<triggerID\>|EV#\<eventId(timestamp)\>|triggerEvent:S(StringifiedJson),<br> expiresOn (1 day)
 |insrtrument|INSTRUMENT|EPIC#\<epic\>|epic:S, description:S, symbol:S
 
 # requirements

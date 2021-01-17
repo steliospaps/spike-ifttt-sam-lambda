@@ -159,6 +159,7 @@ public class WebsocketClient implements HealthIndicator{
 				.epic(quote.getQuoteReqID())//sending epic getting back epic saves us from having to keep a local map
 				.bid(quote.getBidPx())//
 				.offer(quote.getOfferPx())//
+				.netChgPrevDay(quote.getNetChgPrevDay())//
 				.build());
 	}
 

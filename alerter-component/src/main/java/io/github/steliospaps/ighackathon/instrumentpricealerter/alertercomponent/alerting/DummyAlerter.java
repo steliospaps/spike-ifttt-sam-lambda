@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.TriggersUtil;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.MyTableRow;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.TriggerEvent;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.TriggerEvent.Meta;
@@ -45,7 +46,7 @@ public class DummyAlerter implements Alerter{
 	private Duration interval;
 	
 	@Override
-	public void onNewTrigger(String pk, TriggerFields tf, boolean hasFired) {
+	public void onNewTrigger(String pk, TriggerFields tf, boolean hasFired, String triggerType) {
 		Disposable d1 = Flux.interval(interval)//
 			.map(i->i+1)//
 			.startWith(0L)//
@@ -66,7 +67,13 @@ public class DummyAlerter implements Alerter{
 						.build()//
 						)
 			.log("pk="+pk)
-			.subscribe(te -> triggerAlert(pk, te));
+			.subscribe(te -> {
+				if(triggerType.equals("instrument_price")) {
+					triggerInstrumentPriceAlert(pk, te);
+				}else {
+					triggerPrevDayChangeAlert(pk, te);
+				}
+			});
 		Disposable old = subscriptions.put(pk, d1);
 		if(old != null) {
 			log.warn("onNewTrigger - disposable for pk={} already there. will dispose",pk);
@@ -87,17 +94,25 @@ public class DummyAlerter implements Alerter{
 	}
 	
 	@SneakyThrows
-	private void triggerAlert(String pk, TriggerEventWrapper te) {
+	private void triggerInstrumentPriceAlert(String pk, TriggerEventWrapper te) {
 		//TODO: race condition this can end up inserting (via update) when the delete has not arrived yet
 		// This can be addressed by changing the model to use a TTL field that gets set by the deletion
 		// instead of deleting 
-		log.info("triggerAlert - pk={} te={}",pk,te);
+		log.info("triggerInstrumentPriceAlert - pk={} te={}",pk,te);
 		MyTableRow toUpdate = new MyTableRow();
 		toUpdate.setPK(pk);
 		toUpdate.setSK(pk);//same for trigger entity
 		toUpdate.setTriggerEvents(jaxbMapper.writeValueAsString(List.of(te)));
 		dynamoDBMapper.save(toUpdate);//this updates non null fields (SaveBehavior.UPDATE_SKIP_NULL_ATTRIBUTES)
 
+	}
+	@SneakyThrows
+	private void triggerPrevDayChangeAlert(String pk, TriggerEventWrapper te) {
+		log.info("triggerPrevDayChangeAlert - pk={} te={}",pk,te);
+		MyTableRow row = TriggersUtil.makeTriggerEventRow(pk)
+				.triggerEvent(jaxbMapper.writeValueAsString(te.getData()))//
+				.build();
+		dynamoDBMapper.save(row);
 	}
 
 }

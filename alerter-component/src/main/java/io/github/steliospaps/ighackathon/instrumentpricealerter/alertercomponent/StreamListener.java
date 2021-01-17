@@ -72,14 +72,19 @@ public class StreamListener implements HealthIndicator {
 					switch (o.getEventName()) {
 					case "INSERT": {
 
-						MyTableRow tr = dynamoDbMapper.marshallIntoObject(MyTableRow.class, o.getDynamodb().getNewImage());
+						MyTableRow tr = dynamoDbMapper.marshallIntoObject(MyTableRow.class,
+								o.getDynamodb().getNewImage());
 						if (TriggersUtil.isTriggerRecord(tr)) {
 							TriggerFields tf = Optional.ofNullable(tr.getTriggerFields())//
 									.map(Util.sneakyF(str -> jaxbMapper.readValue(str, TriggerFields.class)))//
 									.orElse(null);
 							log.info("new triggerId={} triggerFields={}", tr.getPK(), tf);
 							if (tf != null) {
-								alerter.onNewTrigger(tr.getPK(), tf, tr.getTriggerEvents()!=null);
+								alerter.onNewTrigger(tr.getPK(), tf, tr.getTriggerEvents() != null, //
+										Optional.ofNullable(tr.getTriggerType())//
+												.orElse("instrument_price")// default value for field (only valid value
+																			// when introduced)
+								);
 							} else {
 								log.warn("skipping {} (no triggerFields)", tr);
 							}
@@ -91,7 +96,8 @@ public class StreamListener implements HealthIndicator {
 					case "MODIFY":
 						continue;
 					case "REMOVE": {
-						MyTableRow tr = dynamoDbMapper.marshallIntoObject(MyTableRow.class, o.getDynamodb().getOldImage());
+						MyTableRow tr = dynamoDbMapper.marshallIntoObject(MyTableRow.class,
+								o.getDynamodb().getOldImage());
 						if (TriggersUtil.isTriggerRecord(tr)) {
 							log.info("delete triggerId={} triggerFields={}", tr.getPK());
 							alerter.onDeleteTrigger(tr.getPK());

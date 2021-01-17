@@ -1,5 +1,7 @@
 package io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent;
 
+import java.util.Optional;
+
 import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,9 +60,12 @@ public class InitialTableScanner {
 					log.info("scanned {}", tr);
 					if (TriggersUtil.isTriggerRecord(tr)) {
 						log.info("looks like a trigger");
-						alerter.onNewTrigger(tr.getPK(),
-								jaxbMapper.readValue(tr.getTriggerFields(), TriggerFields.class),
-								tr.getTriggerEvents()!=null);
+						alerter.onNewTrigger(tr.getPK(),//
+								jaxbMapper.readValue(tr.getTriggerFields(), TriggerFields.class),//
+								tr.getTriggerEvents()!=null,// 
+								Optional.ofNullable(tr.getTriggerType())//
+									.orElse("instrument_price")//default value for field (only valid value when introduced) 
+								);
 
 					} else {
 						log.info("skipping");
