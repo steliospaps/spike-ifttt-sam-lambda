@@ -8,12 +8,14 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.logging.Level;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +23,7 @@ import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.WebSocketSession;
@@ -58,6 +61,7 @@ import reactor.core.publisher.SignalType;
 @Component
 @Slf4j
 @ConditionalOnProperty(name = "app.ws.enabled", matchIfMissing = true)
+@DependsOn({"priceAlerter","initialTableScanner","epicUpdater"}) //looks like event listener beans can be created after event publishers
 public class WebsocketClient implements HealthIndicator{
 	
 	@Value("${app.ws.url}")
@@ -193,6 +197,7 @@ public class WebsocketClient implements HealthIndicator{
 	}
 
 	private void publishInstrument(SecListGrp sec) {
+		log.info("publishInstrument - {}", ReflectionToStringBuilder.toString(sec));
 		publisher.publishEvent(InstrumentReceivedFromIGEvent.builder()//
 				.symbol(sec.getSymbol())//
 				.epic(sec.getSecurityID())//

@@ -162,6 +162,7 @@ public class PriceAlerter implements Alerter {
 
 	@EventListener
 	public void onInstrument(InstrumentReceivedFromIGEvent instr) {
+		log.info("onInstrument {}", instr);
 		epicCache.put(instr.getEpic(), instr);
 	}
 
@@ -186,6 +187,9 @@ public class PriceAlerter implements Alerter {
 			//TODO: make this trigger specific type
 			Optional<InstrumentReceivedFromIGEvent> instr = Optional
 					.ofNullable(epicCache.get(tick.getEpic()));
+			if(!instr.isPresent()){
+				log.warn("handleDayChangedTrigger - could not find instrument for epic {}",tick.getEpic());
+			}
 			triggerNetDayChangedAlert(sub.getPk(), TriggerEvent.builder()//
 							.instrument(instr.map(i -> i.getSymbol()).orElse("[N/A]"))//
 							.instrumentName(instr.map(i -> i.getDescription()).orElse("[N/A]"))//
@@ -246,8 +250,10 @@ public class PriceAlerter implements Alerter {
 					sub.setArmed(false);
 				}
 			} else if (sub.getTargetPrice().doubleValue() > tick.getOffer().doubleValue() * 0.95) {
-				log.info("arming {}", sub);
-				sub.setArmed(true);
+				if(!sub.isArmed()) {
+					log.info("arming {}", sub);
+					sub.setArmed(true);
+				}
 			}
 		} else {
 			if (sub.getTargetPrice().compareTo(tick.getBid()) > 0) {
@@ -268,8 +274,10 @@ public class PriceAlerter implements Alerter {
 					sub.setArmed(false);
 				}
 			} else if (sub.getTargetPrice().doubleValue() < tick.getBid().doubleValue() * 0.95) {
-				log.info("arming {}", sub);
-				sub.setArmed(true);
+				if(!sub.isArmed()) {
+					log.info("arming {}", sub);
+					sub.setArmed(true);
+				}
 			}
 		}
 	}
