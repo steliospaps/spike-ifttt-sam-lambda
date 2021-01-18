@@ -1,0 +1,34 @@
+{
+  "Records": [
+    {
+      "eventID": "f97e98f13f71208816cb2d74bdf18017",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "eu-west-2",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1609350156.0,
+        "Keys": {
+          "PK": {
+            "S": "TR#blah#a1274ad5bc21ed2e02636e6bb1f8bc584ccb19f3"
+          },
+          "SK": {
+            "S": "EV#a1274ad5bc21ed2e02636e6bb1f8bc584ccb19f3"
+          }
+        },
+        "NewImage": {
+          "PK": {
+            "S": "TR#blah#a1274ad5bc21ed2e02636e6bb1f8bc584ccb19f3"
+          },
+          "SK": {
+            "S": "EV#a1274ad5bc21ed2e02636e6bb1f8bc584ccb19f3"
+          }
+        },
+        "SequenceNumber": "37122100000000002375818630",
+        "SizeBytes": 434,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "eventSourceARN": "arn:aws:dynamodb:eu-west-2:834656303304:table/SteliosTest-Stelios-EpicPriceAlert/stream/2020-12-22T22:03:45.738"
+    }
+  ]
+}

@@ -109,9 +109,13 @@ def lambda_handler(event, context):
     print("event=",event)
 
     triggerIds=set()
+
+    #TODO deal with prev_day_change (it will appear as a new TR#prev_day_change#<triggerId>,EV#<timestamp> record)
+
     for record in event.get('Records',[]):
         event_id=record['eventID']
-        if record['eventName'] == "MODIFY":
+        #see https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_streams_Record.html
+        if record['eventName'] == "MODIFY": # INSERT | MODIFY | REMOVE
             neo = record['dynamodb']['NewImage'] #should always be there for MODIFY
             old = record['dynamodb']['OldImage'] #should always be there for MODIFY
             if neo['PK']['S'].startswith("TR#"):
@@ -120,20 +124,35 @@ def lambda_handler(event, context):
                         if 'triggerId' in neo:
                             if neo['triggerEvents'].get("S","") != \
                                 old.get('triggerEvents',{}).get("S",""):
-                                print(f"will alert for {neo['PK']}")
+                                print(f"MODIFY - will alert for {neo['PK']}")
                                 triggerIds.add(neo['triggerId']['S'])
                             else:
-                                print(f"ignoring event_id={event_id} because it has no triggerEvents changes")
+                                print(f"MODIFY - ignoring event_id={event_id} because it has no triggerEvents changes")
                         else:
-                            print(f"ignoring event_id={event_id} because it has no triggerId changes")
+                            print(f"MODIFY - ignoring event_id={event_id} because it has no triggerId changes")
                     else:
-                        print(f"ignoring event_id={event_id} because it has no triggerEvents")
+                        print(f"MODIFY - ignoring event_id={event_id} because it has no triggerEvents")
                 else:
-                    print(f"ignoring event_id={event_id} because PK!=SK")
+                    print(f"MODIFY - ignoring event_id={event_id} because PK!=SK")
             else:
                 print(f"ignoring event_id={event_id} because PK does not start with 'TR#'")
+        elif record['eventName'] == "INSERT":
+            neo = record['dynamodb']['NewImage'] #should always be there for INSERT
+            if not neo['PK']['S'].startswith("TR#"):
+                print(f"INSERT - ignoring event_id={event_id} because PK does not start with 'TR#'")
+            elif neo['PK']['S'].startswith("EV#"):
+                print(f"INSERT - ignoring event_id={event_id} because SK does not start with 'EV#'")
+            else:
+                items=neo['PK']['S'].split('#')
+                if len(items)!=3:
+                    print(f"INSERT - ignoring event_id={event_id} because I cannot parse PK")
+                else:
+                    trigger_id=items[2]
+                    print(f"INSERT - will alert for {neo['PK']}")
+                    triggerIds.add(trigger_id)
         else:
-            print(f"ignoring event_id={event_id} because it is not MODIFY")
+            print(f"ignoring event_id={event_id} because it is not MODIFY or INSERT")
+
 
     toSend=[]
     for tr in triggerIds:

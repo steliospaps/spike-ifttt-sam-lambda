@@ -97,6 +97,84 @@
 			"response": []
 		},
 		{
+			"name": "triggers/prev_day_change POST",
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"content-type": true
+				}
+			},
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "IFTTT-Service-Key",
+						"value": "{{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"trigger_identity\": \"{{triggerIdentity}}\",\n  \"triggerFields\": {\n  },\n  \"limit\": 10,\n  \"ifttt_source\": {\n    \"id\": \"2\",\n    \"url\": \"https://ifttt.com/myrecipes/personal/2\"\n  },\n  \"user\": {\n    \"timezone\": \"America/Los_Angeles\"\n  }\n}"
+				},
+				"url": {
+					"raw": "{{ifttt}}/ifttt/v1/triggers/prev_day_change",
+					"host": [
+						"{{ifttt}}"
+					],
+					"path": [
+						"ifttt",
+						"v1",
+						"triggers",
+						"prev_day_change"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "triggers/prev_day_change del",
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"content-type": true
+				}
+			},
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "IFTTT-Service-Key",
+						"type": "text",
+						"value": "{{token}}"
+					}
+				],
+				"url": {
+					"raw": "{{ifttt}}/ifttt/v1/triggers/prev_day_change/trigger_identity/{{triggerIdentity}}",
+					"host": [
+						"{{ifttt}}"
+					],
+					"path": [
+						"ifttt",
+						"v1",
+						"triggers",
+						"prev_day_change",
+						"trigger_identity",
+						"{{triggerIdentity}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "fileds instrument_price epic",
 			"protocolProfileBehavior": {
 				"disabledSystemHeaders": {

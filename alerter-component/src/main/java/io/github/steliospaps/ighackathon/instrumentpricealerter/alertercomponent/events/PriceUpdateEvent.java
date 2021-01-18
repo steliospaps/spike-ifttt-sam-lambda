@@ -14,4 +14,5 @@ public class PriceUpdateEvent {
 	private String epic;
 	private BigDecimal bid;
 	private BigDecimal offer;
+	private BigDecimal netChgPrevDay;
 }

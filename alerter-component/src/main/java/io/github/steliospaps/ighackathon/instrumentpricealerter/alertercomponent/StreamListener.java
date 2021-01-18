@@ -13,7 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -72,14 +74,19 @@ public class StreamListener implements HealthIndicator {
 					switch (o.getEventName()) {
 					case "INSERT": {
 
-						MyTableRow tr = dynamoDbMapper.marshallIntoObject(MyTableRow.class, o.getDynamodb().getNewImage());
+						MyTableRow tr = dynamoDbMapper.marshallIntoObject(MyTableRow.class,
+								o.getDynamodb().getNewImage());
 						if (TriggersUtil.isTriggerRecord(tr)) {
 							TriggerFields tf = Optional.ofNullable(tr.getTriggerFields())//
 									.map(Util.sneakyF(str -> jaxbMapper.readValue(str, TriggerFields.class)))//
 									.orElse(null);
 							log.info("new triggerId={} triggerFields={}", tr.getPK(), tf);
 							if (tf != null) {
-								alerter.onNewTrigger(tr.getPK(), tf, tr.getTriggerEvents()!=null);
+								alerter.onNewTrigger(tr.getPK(), tf, tr.getTriggerEvents() != null, //
+										Optional.ofNullable(tr.getTriggerType())//
+												.orElse("instrument_price")// default value for field (only valid value
+																			// when introduced)
+								);
 							} else {
 								log.warn("skipping {} (no triggerFields)", tr);
 							}
@@ -91,7 +98,8 @@ public class StreamListener implements HealthIndicator {
 					case "MODIFY":
 						continue;
 					case "REMOVE": {
-						MyTableRow tr = dynamoDbMapper.marshallIntoObject(MyTableRow.class, o.getDynamodb().getOldImage());
+						MyTableRow tr = dynamoDbMapper.marshallIntoObject(MyTableRow.class,
+								o.getDynamodb().getOldImage());
 						if (TriggersUtil.isTriggerRecord(tr)) {
 							log.info("delete triggerId={} triggerFields={}", tr.getPK());
 							alerter.onDeleteTrigger(tr.getPK());
@@ -154,7 +162,7 @@ public class StreamListener implements HealthIndicator {
 	@Autowired
 	private Alerter alerter;
 
-	@PostConstruct
+	@EventListener(ApplicationReadyEvent.class)
 	public void init() {
 		dynamoDbMapper = new DynamoDBMapper(dynamoDb);
 

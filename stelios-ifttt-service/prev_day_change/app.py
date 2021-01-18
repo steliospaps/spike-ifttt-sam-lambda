@@ -3,8 +3,10 @@ import os
 import boto3
 from aws_xray_sdk.core import xray_recorder
 from aws_xray_sdk.core import patch_all
-from boto3.dynamodb.conditions import Attr, And, Or
+from boto3.dynamodb.conditions import Attr, And, Key, Or
 from botocore.exceptions import ClientError
+import time
+import calendar
 # import requests
 
 patch_all()
@@ -72,7 +74,7 @@ def lambda_handler(event, context):
     method=event['httpMethod']
     print(f"method={method}")
     print(f"table_name={table_name}")
-    myTriggerType='instrument_price'
+    myTriggerType='prev_day_change' # TODO: get from path
 
     
     if method == "DELETE":
@@ -82,9 +84,15 @@ def lambda_handler(event, context):
 
         try:
             #see https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/dynamodb.html#DynamoDB.Table.delete_item
-            response = table.delete_item(
+            response = table.update_item(
                 Key={'PK':f"TR#{myTriggerType}#{trigger_id}", "SK":f"TR#{myTriggerType}#{trigger_id}"},
-                ConditionExpression=And(Attr('PK').eq(Attr('SK')),Attr('triggerType').eq(myTriggerType)),
+                UpdateExpression="SET expiresOn = :val1",
+                ExpressionAttributeValues={
+                    ':val1': calendar.timegm(time.gmtime()),
+                },
+                ConditionExpression=And(
+                    And(Attr('PK').exists(),Attr('expiresOn').not_exists()),
+                    Attr('triggerType').eq(myTriggerType)),
             )
         except ClientError as e:
             print(f"clientError={e}")
@@ -100,15 +108,32 @@ def lambda_handler(event, context):
     elif method == "POST":
         body=json.loads(event['body'])
         trigger_id=body['trigger_identity']
+        limit = body.get('limit',50)
         print(f"triggerId={trigger_id}")
-
-        response = table.get_item(
-            Key={'PK':f"TR#{myTriggerType}#{trigger_id}", "SK":f"TR#{myTriggerType}#{trigger_id}"},
-            ProjectionExpression="triggerEvents, triggerType",
+        
+        ###########
+        # for a PK TR#1 with events EV#1 EV#2 EV#N it will load:
+        # TR#1,TR#1
+        # TR#1,EV#N
+        # TR#1,EV#N-1
+        # ....
+        # TR#1,EV#N-(limit-1)
+        response = table.query(
+            KeyConditionExpression=Key("PK").eq(f"TR#{myTriggerType}#{trigger_id}")
+                #.__and__(Key("SK").begins_with(f"TR#{myTriggerType}#").__or__(Key("SK").begins_with(f"EV#")))
+                #parked for now but how do I filter for keys begining with X or y? (probably with a query filter?)
+                #TODO: filter query on SK, how do I do that?
+                ,
+            ScanIndexForward=False, #the latest X events + trigger (trigger sorts after events)
+            Limit=limit + 1, #+1 for Trigger row
+            ProjectionExpression="SK, triggerEvent, expiresOn",
         )
+        #no need to itterate as we do not expect to filter out anything
         print(f"response={response}")
-
-        if "Item" not in response:
+        items = response["Items"]
+        if 0 == len(items) \
+            or (not items[0]['SK'].startswith("TR#") )\
+            or 'expiresOn' in items[0]:
             #brand new 
             print(f"inserting {trigger_id}")
             if 'triggerFields' not in body:
@@ -125,29 +150,29 @@ def lambda_handler(event, context):
                         'triggerFields': json.dumps(triggerFields),
                         'triggerType': myTriggerType,
                     },
-                    ConditionExpression=Or(Attr('triggerType').eq(myTriggerType),Attr('triggerType').not_exists())
+                    ConditionExpression=Or(
+                        Attr('expiresOn').exists(),#previously deleted item # TODO: in this case we 'resurect' the old events. This should not happen
+                        Attr('PK').not_exists() # brand new item
+                    ),
                 )
             except ClientError as e:
                 print(f"clientError={e}")
-                #somehow got created with someone elses triggerType
                 if e.response['Error']['Code']=='ConditionalCheckFailedException':
-                    return iftttError(404,"item not found")
+                    return iftttError(404,"item not found") # 
                 raise
             print("response ",response)
             triggered=[]
-        elif response['Item'].get("triggerType",myTriggerType) != myTriggerType:
-            #it exists but it is someone elses
-            return iftttError(404,"item not found")
         else:
-            item=response['Item']
-            print(f"found {item} ")
+            events = items[1:]
+            print(f"found {events} ")
             #hacky string way to avoid having multiple columns
             #TODO: change this to use  a Map? (will allow to add without overwrite)
-            events = json.loads(item.get("triggerEvents","[]"))
+            #events = json.loads(item.get("triggerEvents","[]"))
             triggered= []
+            now=calendar.timegm(time.gmtime())
             for event in events:
-                #TODO: implement limit (not needed now becasue I expect only up to one events)
-                triggered.append(event['data'])
+                if now< event.get('expiresOn',now+1):
+                    triggered.append(json.loads(event['triggerEvent']))
                 
         return {
             "statusCode": 200,
