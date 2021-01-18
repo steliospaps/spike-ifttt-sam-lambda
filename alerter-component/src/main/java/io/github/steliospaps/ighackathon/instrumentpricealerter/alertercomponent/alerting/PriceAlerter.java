@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -135,6 +136,12 @@ public class PriceAlerter implements Alerter {
 		}
 	}
 
+	@Scheduled(cron = "${app.alerter.price.net-day-change.reset.cron}")
+	public void resetNetDayChange() {
+		log.info("resetNetDayChange");
+		subscriptionsForNetDayChange.stream().forEach(sub -> sub.getPrevDayChangeState().set(null));
+	}
+	
 	@Override
 	public void onDeleteTrigger(String pk) {
 		Subscription sub = subscriptionsByPK.remove(pk);
