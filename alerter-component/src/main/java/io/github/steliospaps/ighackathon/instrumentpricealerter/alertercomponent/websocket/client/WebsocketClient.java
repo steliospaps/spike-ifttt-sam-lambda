@@ -22,8 +22,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.WebSocketSession;
@@ -88,7 +90,7 @@ public class WebsocketClient implements HealthIndicator{
 	private Duration heartBeatInterval = Duration.ofSeconds(20);
 	private volatile boolean connected = false;
 	
-	@PostConstruct
+	@EventListener(ApplicationReadyEvent.class)
 	public void run() {
 		log.info("url={}",url);
 		//log.info("password={}",password);

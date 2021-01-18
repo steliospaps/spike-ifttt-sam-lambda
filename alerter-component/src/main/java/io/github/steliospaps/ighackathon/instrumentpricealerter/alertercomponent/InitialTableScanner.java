@@ -6,8 +6,10 @@ import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -45,7 +47,7 @@ public class InitialTableScanner {
 	@Autowired
 	private DynamoDBMapper dynamoDbMapper;
 
-	@PostConstruct
+	@EventListener(ApplicationReadyEvent.class)
 	void scanForTriggers() {
 		log.info("scanning entities scanChunk={} ***********************", scanChunk);
 

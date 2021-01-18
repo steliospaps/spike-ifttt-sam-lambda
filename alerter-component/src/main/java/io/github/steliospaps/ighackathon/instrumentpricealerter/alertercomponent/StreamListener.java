@@ -13,7 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -160,7 +162,7 @@ public class StreamListener implements HealthIndicator {
 	@Autowired
 	private Alerter alerter;
 
-	@PostConstruct
+	@EventListener(ApplicationReadyEvent.class)
 	public void init() {
 		dynamoDbMapper = new DynamoDBMapper(dynamoDb);
 
