@@ -125,7 +125,7 @@ def lambda_handler(event, context):
                         'triggerFields': json.dumps(triggerFields),
                         'triggerType': myTriggerType,
                     },
-                    ConditionExpression=Or(Attr('triggerType').eq(myTriggerType),Attr('triggerType').not_exists)
+                    ConditionExpression=Or(Attr('triggerType').eq(myTriggerType),Attr('triggerType').not_exists())
                 )
             except ClientError as e:
                 print(f"clientError={e}")
