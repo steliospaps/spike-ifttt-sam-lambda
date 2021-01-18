@@ -29,7 +29,7 @@ Assuming git and make installed:
 ```
 sudo apt install maven docker.io docker-compose awscli python3-pip
 ```
-Follow instructions (to install sam cli)[https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install-linux.html] in particular about installing brew
+Follow instructions [to install sam cli](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install-linux.html) in particular about installing brew
 
 ```
 brew install aws/tap/aws-sam-cli
