@@ -122,6 +122,7 @@ public class WebsocketClient implements HealthIndicator{
 				.log("ws-output",Level.FINEST,SignalType.ON_NEXT)//
 				.log("ws-output",Level.INFO,SignalType.ON_SUBSCRIBE,SignalType.CANCEL,SignalType.ON_COMPLETE,SignalType.ON_ERROR,SignalType.AFTER_TERMINATE)//
 				.map(toSend->ws.textMessage(toSend)))
+				.doOnTerminate(() -> log.warn("will retry connection in {} seconds", retryConnectionInterval.getSeconds()))
 				.doFinally(s -> connected=false)
 				;
 	}
@@ -146,6 +147,9 @@ public class WebsocketClient implements HealthIndicator{
 				return handleSecurityList(mapper.treeToValue(jsonNode, SecurityList.class));
 			case "Quote":
 				publishPrices(mapper.treeToValue(jsonNode, Quote.class));
+				return Flux.empty();
+			case "NegotiationReject":
+				log.warn("Session failed to logon, reason={}", jsonNode.get("Reason"));
 				return Flux.empty();
 			default:
 				log.info("ignoring msg={}",jsonNode);
