@@ -1,9 +1,13 @@
 package io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent;
 
-import java.util.Optional;
-
-import javax.annotation.PostConstruct;
-
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedScanList;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.alerting.Alerter;
+import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.MyTableRow;
+import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.TriggerFields;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -11,19 +15,8 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.TableNameOverride;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedScanList;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.alerting.Alerter;
-import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.MyTableRow;
-import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.TriggerFields;
-import lombok.extern.slf4j.Slf4j;
+import java.util.Optional;
 
 /**
  * scans the persistent store on application start.
@@ -49,7 +42,7 @@ public class InitialTableScanner {
 
 	@EventListener(ApplicationReadyEvent.class)
 	void scanForTriggers() {
-		log.info("scanning entities scanChunk={} ***********************", scanChunk);
+		log.info("scanning entities for triggers scanChunk={} ***********************", scanChunk);
 
 		DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
 		scanExpression.setLimit(scanChunk);
@@ -70,7 +63,7 @@ public class InitialTableScanner {
 								);
 
 					} else {
-						log.info("skipping");
+						log.info("ignoring (non trigger row)");
 					}
 				}));
 		log.info("scanned entities ******************");

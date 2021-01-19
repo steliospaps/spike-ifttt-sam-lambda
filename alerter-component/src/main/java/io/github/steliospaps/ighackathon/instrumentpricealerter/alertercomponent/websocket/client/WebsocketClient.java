@@ -93,7 +93,6 @@ public class WebsocketClient implements HealthIndicator{
 	@EventListener(ApplicationReadyEvent.class)
 	public void run() {
 		log.info("url={}",url);
-		//log.info("password={}",password);
 		log.info("username={}",username);
 		ReactorNettyWebSocketClient client = new ReactorNettyWebSocketClient();
 		disposable = Flux.interval(retryConnectionInterval)//reconnect that often
@@ -242,7 +241,7 @@ public class WebsocketClient implements HealthIndicator{
 			return node.asText();
 		}
 		log.error("unexpected type in {}",jsonNode);
-		return "unexpeted";
+		return "unexpected";
 	}
 
 	private Object loginMessage() {
