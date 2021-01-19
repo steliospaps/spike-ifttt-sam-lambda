@@ -1,10 +1,7 @@
 package io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.alerting;
 
 import java.math.BigDecimal;
-import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -15,7 +12,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -25,8 +21,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.TriggersUtil;
-import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.alerting.PriceAlerter.PrevDayChangeState;
-import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.alerting.PriceAlerter.TriggerType;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.MyTableRow;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.TriggerEvent;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.TriggerEvent.Meta;
@@ -40,11 +34,8 @@ import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Data;
 import lombok.EqualsAndHashCode.Exclude;
-import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.Disposable;
-import reactor.core.publisher.Flux;
 
 @Component
 @Slf4j
@@ -97,42 +88,55 @@ public class PriceAlerter implements Alerter {
 
 	@Override
 	public void onNewTrigger(String pk, TriggerFields tf, boolean hasFired, String triggerType) {
-		log.info("triggerType={} {}",triggerType,triggerType.toUpperCase());
+		log.info("onNewTrigger triggerType={} {}",triggerType,triggerType.toUpperCase());
 		TriggerType type = TriggerType.valueOf(triggerType.toUpperCase());
-		Subscription sub;
+
 		if(type == TriggerType.PREV_DAY_CHANGE) {
-			sub = Subscription.builder()//
+			addNetDayChangeSubscription(pk, type);
+		} else if(type == TriggerType.INSTRUMENT_PRICE) {
+			addInstrumentPriceSubscription(pk, tf, hasFired, type);
+		} else {
+			log.error("invalid triggerType={}",triggerType);
+		}
+	}
+
+	private void addInstrumentPriceSubscription(String pk, TriggerFields tf, boolean hasFired, TriggerType type) {
+		Subscription sub;
+		sub = Subscription.builder().epic(tf.getEpic())//
+				.targetPrice(new BigDecimal(tf.getPrice().replaceAll(",", ""))) // TODO: deal with this being bad? (in the api
+															// lambda?+here?)
+				.isArmed(!hasFired)// will fire on the first matching price if not fired before
+				// this is to avoid refiring on startup
+				.isOver(tf.getDirection() == Direction.OVER)
+				.pk(pk)//
+				.triggerType(type)
+				.build();
+		Subscription old = subscriptionsByPK.put(pk, sub);
+		if (old != null) {
+			log.warn("addInstrumentPriceSubscription - subscription for pk={} already there. will replace", pk);
+		}
+		boolean isNew=subscriptionsByEpic
+				.computeIfAbsent(sub.getEpic(), epic -> new CopyOnWriteArraySet<Subscription>()).add(sub);
+		if (!isNew) {
+			log.warn("addInstrumentPriceSubscription - subscription for pk={} on subscriptionsByEpic already there. will replace", pk);
+		}
+	}
+
+	private void addNetDayChangeSubscription(String pk, TriggerType type) {
+		Subscription sub;
+		sub = Subscription.builder()//
 				.triggerType(type)//
 				.pk(pk)//
 				.build();
 		Subscription old = subscriptionsByPK.put(pk, sub);
 		if (old != null) {
-			log.warn("onNewTrigger - subscription for pk={} already there. will replace", pk);
+			log.warn("addNetDayChangeSubscription - subscription for pk={} already there. will replace", pk);
 		}
 		boolean isNew;
-			isNew = subscriptionsForNetDayChange.add(sub);
+		isNew = subscriptionsForNetDayChange.add(sub);
 		if (!isNew) {
-			log.warn("onNewTrigger - subscription for pk={} on subscriptionsForNetDayChange already there. will replace", pk);
-		}
-		} else {
-			sub = Subscription.builder().epic(tf.getEpic())//
-					.targetPrice(new BigDecimal(tf.getPrice().replaceAll(",", ""))) // TODO: deal with this being bad? (in the api
-																// lambda?+here?)
-					.isArmed(!hasFired)// will fire on the first matching price if not fired before
-					// this is to avoid refiring on startup
-					.isOver(tf.getDirection() == Direction.OVER)
-					.pk(pk)//
-					.triggerType(type)
-					.build();
-			Subscription old = subscriptionsByPK.put(pk, sub);
-			if (old != null) {
-				log.warn("onNewTrigger - subscription for pk={} already there. will replace", pk);
-			}
-			boolean isNew=subscriptionsByEpic
-					.computeIfAbsent(sub.getEpic(), epic -> new CopyOnWriteArraySet<Subscription>()).add(sub);
-			if (!isNew) {
-				log.warn("onNewTrigger - subscription for pk={} on subscriptionsByEpic already there. will replace", pk);
-			}
+			log.warn("addNetDayChangeSubscription - subscription for pk={} on subscriptionsForNetDayChange already there. will replace",
+					pk);
 		}
 	}
 
@@ -154,22 +158,22 @@ public class PriceAlerter implements Alerter {
 				log.warn("onDeleteTrigger for pk={} epic={} : could not find the subscription in subscriptionsForNetDayChange."
 						+ " Will not remove anything", pk, sub.getEpic());
 			}
-		}else {
-		Set<Subscription> set = subscriptionsByEpic.get(sub.getEpic());
-		if (set == null) {
-			log.warn("onDeleteTrigger for pk={} epic={} has no subscriptions", pk, sub.getEpic());
-			return;
-		}
-		if (!set.remove(sub)) {
-			log.warn("onDeleteTrigger for pk={} epic={} : could not find the subscription in subscriptionsByEpic."
-					+ " Will not remove anything", pk, sub.getEpic());
-		}
+		} else {
+			Set<Subscription> set = subscriptionsByEpic.get(sub.getEpic());
+			if (set == null) {
+				log.warn("onDeleteTrigger for pk={} epic={} has no subscriptions", pk, sub.getEpic());
+				return;
+			}
+			if (!set.remove(sub)) {
+				log.warn("onDeleteTrigger for pk={} epic={} : could not find the subscription in subscriptionsByEpic."
+						+ " Will not remove anything", pk, sub.getEpic());
+			}
 		}
 	}
 
 	@EventListener
 	public void onInstrument(InstrumentReceivedFromIGEvent instr) {
-		log.info("onInstrument {}", instr);
+		log.debug("onInstrument {}", instr);
 		epicCache.put(instr.getEpic(), instr);
 	}
 
@@ -224,7 +228,7 @@ public class PriceAlerter implements Alerter {
 	}
 
 	/**
-	 * TODO: on restart we lose the state so we wioll always retrigger on restart. Make it preserve state and load
+	 * TODO: on restart we lose the state so we will always retrigger on restart. Make it preserve state and load
 	 * @param sub
 	 * @return true if subscription has not fired before
 	 */

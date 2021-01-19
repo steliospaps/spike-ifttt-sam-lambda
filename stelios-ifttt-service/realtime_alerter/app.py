@@ -141,7 +141,7 @@ def lambda_handler(event, context):
             if not neo['PK']['S'].startswith("TR#"):
                 print(f"INSERT - ignoring event_id={event_id} because PK does not start with 'TR#'")
             elif neo['PK']['S'].startswith("EV#"):
-                print(f"INSERT - ignoring event_id={event_id} because SK does not start with 'EV#'")
+                print(f"INSERT - ignoring event_id={event_id} because PK does not start with 'EV#'")
             else:
                 items=neo['PK']['S'].split('#')
                 if len(items)!=3:
