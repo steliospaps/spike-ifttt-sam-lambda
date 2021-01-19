@@ -41,8 +41,8 @@ public class InitialTableScanner {
 	private DynamoDBMapper dynamoDbMapper;
 
 	@EventListener(ApplicationReadyEvent.class)
-	void scanForTriggers() {
-		log.info("scanning entities for triggers scanChunk={} ***********************", scanChunk);
+	void scanDynamoDbEntities() {
+		log.info("scanning all dynamoDb entities scanChunk={} ***********************", scanChunk);
 
 		DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
 		scanExpression.setLimit(scanChunk);
