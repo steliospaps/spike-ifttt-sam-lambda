@@ -1,18 +1,15 @@
 package io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.websocket.client;
 
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
@@ -26,6 +23,7 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.WebSocketSession;
@@ -89,6 +87,7 @@ public class WebsocketClient implements HealthIndicator{
 	private Duration resetConnectionInterval = Duration.ofHours(8);
 	private Duration heartBeatInterval = Duration.ofSeconds(20);
 	private volatile boolean connected = false;
+	private final AtomicInteger wsMessageCount = new AtomicInteger(0);
 	
 	@EventListener(ApplicationReadyEvent.class)
 	public void run() {
@@ -114,6 +113,7 @@ public class WebsocketClient implements HealthIndicator{
 	private Mono<Void> handleWs(WebSocketSession ws) {
 		return ws.send(ws.receive()
 				.map(WebSocketMessage::getPayloadAsText)//
+				.doOnNext(s -> wsMessageCount.incrementAndGet())
 				.log("ws-input",Level.FINEST,SignalType.ON_NEXT)//
 				.log("ws-input",Level.INFO,SignalType.ON_SUBSCRIBE,SignalType.CANCEL,SignalType.ON_COMPLETE,SignalType.ON_ERROR,SignalType.AFTER_TERMINATE)//
 				.map(Util.sneakyF(str -> mapper.readTree(str)))//
@@ -256,6 +256,12 @@ public class WebsocketClient implements HealthIndicator{
 		} else {
 			return Health.down().build();
 		}
+	}
+
+	@Scheduled(fixedRate = 10_000)
+	public void resetWsMessageReceivedCount() {
+		log.info("Received {} ws messages in period", wsMessageCount);
+		wsMessageCount.set(0);
 	}
 
 }
