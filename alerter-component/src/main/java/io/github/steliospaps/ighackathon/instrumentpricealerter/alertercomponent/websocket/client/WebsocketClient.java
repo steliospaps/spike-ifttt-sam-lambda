@@ -12,6 +12,7 @@ import java.util.logging.Level;
 
 import javax.annotation.PreDestroy;
 
+import io.micrometer.core.instrument.*;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +38,6 @@ import com.ig.orchestrations.fixp.Establish;
 import com.ig.orchestrations.fixp.FlowType;
 import com.ig.orchestrations.fixp.IgExtensionCredentials;
 import com.ig.orchestrations.fixp.Negotiate;
-import com.ig.orchestrations.fixp.NegotiationResponse;
 import com.ig.orchestrations.fixp.UnsequencedHeartbeat;
 import com.ig.orchestrations.us.rfed.fields.SecurityListRequestType;
 import com.ig.orchestrations.us.rfed.fields.SecurityRequestResult;
@@ -76,8 +76,6 @@ public class WebsocketClient implements HealthIndicator{
 	
 	private DateTimeFormatter fmt= DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
 	
-	
-	
 	@Autowired
 	private ObjectMapper mapper;
 	private UUID uuid = UUID.randomUUID();
@@ -87,10 +85,16 @@ public class WebsocketClient implements HealthIndicator{
 	private Duration resetConnectionInterval = Duration.ofHours(8);
 	private Duration heartBeatInterval = Duration.ofSeconds(20);
 	private volatile boolean connected = false;
-	private final AtomicInteger wsMessageCount = new AtomicInteger(0);
-	
+
+	@Autowired
+	private MeterRegistry cloudWatchMeterRegistry;
+	private Counter wsMessageCounter;
+	private final AtomicInteger wsMessageCountForLogging = new AtomicInteger(0);
+
 	@EventListener(ApplicationReadyEvent.class)
 	public void run() {
+		wsMessageCounter = cloudWatchMeterRegistry.counter("ws-messages");
+
 		log.info("url={}",url);
 		log.info("username={}",username);
 		ReactorNettyWebSocketClient client = new ReactorNettyWebSocketClient();
@@ -113,7 +117,10 @@ public class WebsocketClient implements HealthIndicator{
 	private Mono<Void> handleWs(WebSocketSession ws) {
 		return ws.send(ws.receive()
 				.map(WebSocketMessage::getPayloadAsText)//
-				.doOnNext(s -> wsMessageCount.incrementAndGet())
+				.doOnNext(s -> {
+					wsMessageCounter.increment();
+					wsMessageCountForLogging.incrementAndGet();
+				})
 				.log("ws-input",Level.FINEST,SignalType.ON_NEXT)//
 				.log("ws-input",Level.INFO,SignalType.ON_SUBSCRIBE,SignalType.CANCEL,SignalType.ON_COMPLETE,SignalType.ON_ERROR,SignalType.AFTER_TERMINATE)//
 				.map(Util.sneakyF(str -> mapper.readTree(str)))//
@@ -258,10 +265,10 @@ public class WebsocketClient implements HealthIndicator{
 		}
 	}
 
-	@Scheduled(fixedRate = 10_000)
+	@Scheduled(fixedRate = 10_000, initialDelay = 15_000)
 	public void resetWsMessageReceivedCount() {
-		log.info("Received {} ws messages in period", wsMessageCount);
-		wsMessageCount.set(0);
+		log.info("Received {} ws messages in last 10s", wsMessageCountForLogging);
+		wsMessageCountForLogging.set(0);
 	}
 
 }

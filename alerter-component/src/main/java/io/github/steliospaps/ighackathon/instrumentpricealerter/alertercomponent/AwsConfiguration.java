@@ -5,9 +5,6 @@ import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
-import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
-import com.amazonaws.services.cloudwatch.AmazonCloudWatchAsync;
-import com.amazonaws.services.cloudwatch.AmazonCloudWatchAsyncClient;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreams;
@@ -17,15 +14,10 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.TableNameOverride;
 import com.amazonaws.services.dynamodbv2.streamsadapter.AmazonDynamoDBStreamsAdapterClient;
-import io.micrometer.cloudwatch2.CloudWatchConfig;
-import io.micrometer.cloudwatch2.CloudWatchMeterRegistry;
-import io.micrometer.core.instrument.Clock;
-import io.micrometer.core.instrument.Metrics;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
 
 @Configuration
 public class AwsConfiguration {
@@ -49,13 +41,6 @@ public class AwsConfiguration {
 		return new DynamoDBMapper(dynamoDb, cfg);
 	}
 
-//	@Bean
-//	public CloudWatchMeterRegistry cloudWatchMeterRegistry(CloudWatchConfig config) {
-//		CloudWatchMeterRegistry cloudWatchMeterRegistry =
-//				new CloudWatchMeterRegistry(config, Clock.SYSTEM, CloudWatchAsyncClient.create());
-//		Metrics.addRegistry(cloudWatchMeterRegistry);
-//	}
-
 	@Configuration
 	@Profile("!local")
 	public class NonLocalConfiguration {
@@ -75,10 +60,6 @@ public class AwsConfiguration {
 					.build();
 		}
 
-		@Bean
-		public AmazonCloudWatchAsync amazonCloudWatch() {
-			return AmazonCloudWatchAsyncClient.asyncBuilder().withCredentials(credentialsProvider()).build();
-		}
 	}
 
 	@Configuration
@@ -111,12 +92,7 @@ public class AwsConfiguration {
 		public AmazonDynamoDBStreams amazonDynamoDBStreams() {
 			return AmazonDynamoDBStreamsClientBuilder.standard().withCredentials(credentialsProvider())
 					.withEndpointConfiguration(endpoint()).build();
-		}
 
-		@Bean
-		public AmazonCloudWatch amazonCloudWatch() {
-			return AmazonCloudWatchAsyncClient.asyncBuilder().withCredentials(credentialsProvider())
-					.withEndpointConfiguration(endpoint()).build();
 		}
 
 	}
