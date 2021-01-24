@@ -87,13 +87,13 @@ public class WebsocketClient implements HealthIndicator{
 	private volatile boolean connected = false;
 
 	@Autowired
-	private MeterRegistry cloudWatchMeterRegistry;
+	private MeterRegistry meterRegistry;
 	private Counter wsMessageCounter;
 	private final AtomicInteger wsMessageCountForLogging = new AtomicInteger(0);
 
 	@EventListener(ApplicationReadyEvent.class)
 	public void run() {
-		wsMessageCounter = cloudWatchMeterRegistry.counter("ws-messages");
+		wsMessageCounter = meterRegistry.counter("ws-messages");
 
 		log.info("url={}",url);
 		log.info("username={}",username);
