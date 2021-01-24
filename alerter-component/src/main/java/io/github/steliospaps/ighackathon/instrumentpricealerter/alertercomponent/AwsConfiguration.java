@@ -1,9 +1,6 @@
 package io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
@@ -44,19 +41,15 @@ public class AwsConfiguration {
 	@Configuration
 	@Profile("!local")
 	public class NonLocalConfiguration {
+
 		@Bean
-		public AWSCredentialsProvider credentialsProvider() {
-			return DefaultAWSCredentialsProviderChain.getInstance();
+		public AmazonDynamoDB amazonDynamoDB(AWSCredentialsProvider credentialsProvider) {
+			return AmazonDynamoDBClientBuilder.standard().withCredentials(credentialsProvider).build();
 		}
 
 		@Bean
-		public AmazonDynamoDB amazonDynamoDB() {
-			return AmazonDynamoDBClientBuilder.standard().withCredentials(credentialsProvider()).build();
-		}
-
-		@Bean
-		public AmazonDynamoDBStreams amazonDynamoDBStreams() {
-			return AmazonDynamoDBStreamsClientBuilder.standard().withCredentials(credentialsProvider())
+		public AmazonDynamoDBStreams amazonDynamoDBStreams(AWSCredentialsProvider credentialsProvider) {
+			return AmazonDynamoDBStreamsClientBuilder.standard().withCredentials(credentialsProvider)
 					.build();
 		}
 
@@ -72,25 +65,19 @@ public class AwsConfiguration {
 		private String region;
 
 		@Bean
-		public AWSCredentialsProvider credentialsProvider() {
-			return new AWSStaticCredentialsProvider(
-					new BasicAWSCredentials("amazonAWSAccessKey", "amazonAWSSecretKey"));
-		}
-
-		@Bean
 		public EndpointConfiguration endpoint() {
 			return new EndpointConfiguration(endpoint, region);
 		}
 
 		@Bean
-		public AmazonDynamoDB amazonDynamoDB() {
-			return AmazonDynamoDBClientBuilder.standard().withCredentials(credentialsProvider())
+		public AmazonDynamoDB amazonDynamoDB(AWSCredentialsProvider credentialsProvider) {
+			return AmazonDynamoDBClientBuilder.standard().withCredentials(credentialsProvider)
 					.withEndpointConfiguration(endpoint()).build();
 		}
 
 		@Bean
-		public AmazonDynamoDBStreams amazonDynamoDBStreams() {
-			return AmazonDynamoDBStreamsClientBuilder.standard().withCredentials(credentialsProvider())
+		public AmazonDynamoDBStreams amazonDynamoDBStreams(AWSCredentialsProvider credentialsProvider) {
+			return AmazonDynamoDBStreamsClientBuilder.standard().withCredentials(credentialsProvider)
 					.withEndpointConfiguration(endpoint()).build();
 
 		}

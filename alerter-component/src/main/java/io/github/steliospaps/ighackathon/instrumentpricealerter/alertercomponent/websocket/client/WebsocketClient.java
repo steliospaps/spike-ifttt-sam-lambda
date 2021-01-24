@@ -267,7 +267,7 @@ public class WebsocketClient implements HealthIndicator{
 
 	@Scheduled(fixedRate = 10_000, initialDelay = 15_000)
 	public void resetWsMessageReceivedCount() {
-		log.info("Received {} ws messages in last 10s", wsMessageCountForLogging);
+		log.info("Received {} ws messages within last 10s", wsMessageCountForLogging);
 		wsMessageCountForLogging.set(0);
 	}
 
