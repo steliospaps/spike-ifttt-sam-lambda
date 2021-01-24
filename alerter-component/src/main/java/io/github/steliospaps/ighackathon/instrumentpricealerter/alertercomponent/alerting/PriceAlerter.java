@@ -20,8 +20,8 @@ import org.springframework.stereotype.Component;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.TriggersUtil;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.MyTableRow;
+import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.MyTableRowUtil;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.TriggerEvent;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.TriggerEvent.Meta;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.TriggerEventWrapper;
@@ -296,7 +296,7 @@ public class PriceAlerter implements Alerter {
 	@SneakyThrows
 	private void triggerNetDayChangedAlert(String pk, TriggerEvent payload) {
 		log.info("triggerNetDayChangedAlert - pk={} payload={}", pk, payload);
-		MyTableRow row = TriggersUtil.makeTriggerEventRow(pk)
+		MyTableRow row = MyTableRowUtil.makeTriggerEventRow(pk)
 				.triggerEvent(jaxbMapper.writeValueAsString(payload))//
 				.build();
 		dynamoDBMapper.save(row);

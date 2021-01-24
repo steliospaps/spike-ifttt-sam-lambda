@@ -40,3 +40,22 @@ dependencies {
 test {
 	useJUnitPlatform()
 }
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+
+eclipse {
+    classpath {
+        downloadJavadoc = true
+        downloadSources = true
+    }
+}
+
+apply plugin: 'idea'
+
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+    }
+}
