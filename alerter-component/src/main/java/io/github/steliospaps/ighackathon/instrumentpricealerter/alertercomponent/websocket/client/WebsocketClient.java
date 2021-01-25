@@ -1,20 +1,18 @@
 package io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.websocket.client;
 
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+import io.micrometer.core.instrument.*;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +24,7 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.WebSocketSession;
@@ -39,7 +38,6 @@ import com.ig.orchestrations.fixp.Establish;
 import com.ig.orchestrations.fixp.FlowType;
 import com.ig.orchestrations.fixp.IgExtensionCredentials;
 import com.ig.orchestrations.fixp.Negotiate;
-import com.ig.orchestrations.fixp.NegotiationResponse;
 import com.ig.orchestrations.fixp.UnsequencedHeartbeat;
 import com.ig.orchestrations.us.rfed.fields.SecurityListRequestType;
 import com.ig.orchestrations.us.rfed.fields.SecurityRequestResult;
@@ -78,8 +76,6 @@ public class WebsocketClient implements HealthIndicator{
 	
 	private DateTimeFormatter fmt= DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
 	
-	
-	
 	@Autowired
 	private ObjectMapper mapper;
 	private UUID uuid = UUID.randomUUID();
@@ -89,9 +85,16 @@ public class WebsocketClient implements HealthIndicator{
 	private Duration resetConnectionInterval = Duration.ofHours(8);
 	private Duration heartBeatInterval = Duration.ofSeconds(20);
 	private volatile boolean connected = false;
-	
+
+	@Autowired
+	private MeterRegistry meterRegistry;
+	private Counter wsMessageCounter;
+	private final AtomicInteger wsMessageCountForLogging = new AtomicInteger(0);
+
 	@EventListener(ApplicationReadyEvent.class)
 	public void run() {
+		wsMessageCounter = meterRegistry.counter("ws-messages");
+
 		log.info("url={}",url);
 		log.info("username={}",username);
 		ReactorNettyWebSocketClient client = new ReactorNettyWebSocketClient();
@@ -114,6 +117,10 @@ public class WebsocketClient implements HealthIndicator{
 	private Mono<Void> handleWs(WebSocketSession ws) {
 		return ws.send(ws.receive()
 				.map(WebSocketMessage::getPayloadAsText)//
+				.doOnNext(s -> {
+					wsMessageCounter.increment();
+					wsMessageCountForLogging.incrementAndGet();
+				})
 				.log("ws-input",Level.FINEST,SignalType.ON_NEXT)//
 				.log("ws-input",Level.INFO,SignalType.ON_SUBSCRIBE,SignalType.CANCEL,SignalType.ON_COMPLETE,SignalType.ON_ERROR,SignalType.AFTER_TERMINATE)//
 				.map(Util.sneakyF(str -> mapper.readTree(str)))//
@@ -256,6 +263,12 @@ public class WebsocketClient implements HealthIndicator{
 		} else {
 			return Health.down().build();
 		}
+	}
+
+	@Scheduled(fixedRate = 10_000, initialDelay = 15_000)
+	public void resetWsMessageReceivedCount() {
+		log.info("Received {} ws messages within last 10s", wsMessageCountForLogging);
+		wsMessageCountForLogging.set(0);
 	}
 
 }

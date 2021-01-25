@@ -1,20 +1,7 @@
 package io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent;
 
-import org.apache.http.client.CredentialsProvider;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
-
-import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
-import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
-import com.amazonaws.services.cloudwatch.AmazonCloudWatchClientBuilder;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreams;
@@ -24,6 +11,10 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.SaveBehavior;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.TableNameOverride;
 import com.amazonaws.services.dynamodbv2.streamsadapter.AmazonDynamoDBStreamsAdapterClient;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 @Configuration
 public class AwsConfiguration {
@@ -50,26 +41,18 @@ public class AwsConfiguration {
 	@Configuration
 	@Profile("!local")
 	public class NonLocalConfiguration {
+
 		@Bean
-		public AWSCredentialsProvider amazonAWSCredentialsProvider() {
-			return DefaultAWSCredentialsProviderChain.getInstance();
+		public AmazonDynamoDB amazonDynamoDB(AWSCredentialsProvider credentialsProvider) {
+			return AmazonDynamoDBClientBuilder.standard().withCredentials(credentialsProvider).build();
 		}
 
 		@Bean
-		public AmazonDynamoDB amazonDynamoDB() {
-			return AmazonDynamoDBClientBuilder.standard().withCredentials(amazonAWSCredentialsProvider()).build();
-		}
-
-		@Bean
-		public AmazonDynamoDBStreams amazonDynamoDBStreams(AWSCredentialsProvider awsCredentialsProvider) {
-			return AmazonDynamoDBStreamsClientBuilder.standard().withCredentials(amazonAWSCredentialsProvider())
+		public AmazonDynamoDBStreams amazonDynamoDBStreams(AWSCredentialsProvider credentialsProvider) {
+			return AmazonDynamoDBStreamsClientBuilder.standard().withCredentials(credentialsProvider)
 					.build();
 		}
 
-		@Bean
-		public AmazonCloudWatch amazonCloudWatch() {
-			return AmazonCloudWatchClientBuilder.standard().withCredentials(amazonAWSCredentialsProvider()).build();
-		}
 	}
 
 	@Configuration
@@ -82,32 +65,21 @@ public class AwsConfiguration {
 		private String region;
 
 		@Bean
-		public AWSCredentialsProvider amazonAWSCredentialsProvider() {
-			return new AWSStaticCredentialsProvider(
-					new BasicAWSCredentials("amazonAWSAccessKey", "amazonAWSSecretKey"));
-		}
-
-		@Bean
 		public EndpointConfiguration endpoint() {
 			return new EndpointConfiguration(endpoint, region);
 		}
 
 		@Bean
-		public AmazonDynamoDB amazonDynamoDB() {
-			return AmazonDynamoDBClientBuilder.standard().withCredentials(amazonAWSCredentialsProvider())
+		public AmazonDynamoDB amazonDynamoDB(AWSCredentialsProvider credentialsProvider) {
+			return AmazonDynamoDBClientBuilder.standard().withCredentials(credentialsProvider)
 					.withEndpointConfiguration(endpoint()).build();
 		}
 
 		@Bean
-		public AmazonDynamoDBStreams amazonDynamoDBStreams(AWSCredentialsProvider awsCredentialsProvider) {
-			return AmazonDynamoDBStreamsClientBuilder.standard().withCredentials(amazonAWSCredentialsProvider())
+		public AmazonDynamoDBStreams amazonDynamoDBStreams(AWSCredentialsProvider credentialsProvider) {
+			return AmazonDynamoDBStreamsClientBuilder.standard().withCredentials(credentialsProvider)
 					.withEndpointConfiguration(endpoint()).build();
-		}
 
-		@Bean
-		public AmazonCloudWatch amazonCloudWatch() {
-			return AmazonCloudWatchClientBuilder.standard().withCredentials(amazonAWSCredentialsProvider())
-					.withEndpointConfiguration(endpoint()).build();
 		}
 
 	}

@@ -140,7 +140,7 @@ public class StreamListener implements HealthIndicator {
 	private String kinesisWorkerName;
 
 	@Autowired
-	private AWSCredentialsProvider awsCredentialsProvider;
+	private AWSCredentialsProvider credentialsProvider;
 
 	@Autowired
 	private ObjectMapper jaxbMapper;
@@ -169,7 +169,7 @@ public class StreamListener implements HealthIndicator {
 		String streamArn = dynamoDb.describeTable(tableName).getTable().getLatestStreamArn();
 
 		KinesisClientLibConfiguration workerConfig = new KinesisClientLibConfiguration(kinesisTableName, streamArn,
-				awsCredentialsProvider, kinesisWorkerName)//
+				credentialsProvider, kinesisWorkerName)//
 						.withMaxRecords(1000)//
 						.withIdleTimeBetweenReadsInMillis(500)//
 						.withMetricsLevel(metricsLevel)//
