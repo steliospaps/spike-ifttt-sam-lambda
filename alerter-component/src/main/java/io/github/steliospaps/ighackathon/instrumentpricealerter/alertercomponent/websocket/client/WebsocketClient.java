@@ -39,6 +39,7 @@ import com.ig.orchestrations.fixp.FlowType;
 import com.ig.orchestrations.fixp.IgExtensionCredentials;
 import com.ig.orchestrations.fixp.Negotiate;
 import com.ig.orchestrations.fixp.UnsequencedHeartbeat;
+import com.ig.orchestrations.us.rfed.fields.LastFragment;
 import com.ig.orchestrations.us.rfed.fields.SecurityListRequestType;
 import com.ig.orchestrations.us.rfed.fields.SecurityRequestResult;
 import com.ig.orchestrations.us.rfed.fields.SubscriptionRequestType;
@@ -52,6 +53,7 @@ import com.ig.orchestrations.us.rfed.messages.SecurityListRequest;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.Util;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.events.InstrumentReceivedFromIGEvent;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.events.PriceUpdateEvent;
+import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.events.SecurityListReceivedEvent;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -203,6 +205,9 @@ public class WebsocketClient implements HealthIndicator{
 		
 		securityList.getSecListGrp().stream()//
 			.forEach(sec -> publishInstrument(sec));
+		if(securityList.getLastFragment()==LastFragment.LAST_MESSAGE) {
+			publisher.publishEvent(new SecurityListReceivedEvent());
+		}
 		
 		return Flux.fromStream(securityList.getSecListGrp().stream()//
 				.map(sec -> makeQuoteRequest(sec)));

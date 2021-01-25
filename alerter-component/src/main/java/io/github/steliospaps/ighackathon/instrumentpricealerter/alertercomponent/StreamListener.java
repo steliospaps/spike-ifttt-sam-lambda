@@ -43,6 +43,7 @@ import com.amazonaws.services.kinesis.model.Record;
 
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.alerting.Alerter;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.MyTableRow;
+import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.MyTableRowUtil;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.TriggerFields;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -76,7 +77,7 @@ public class StreamListener implements HealthIndicator {
 
 						MyTableRow tr = dynamoDbMapper.marshallIntoObject(MyTableRow.class,
 								o.getDynamodb().getNewImage());
-						if (TriggersUtil.isTriggerRecord(tr)) {
+						if (MyTableRowUtil.isTriggerRecord(tr)) {
 							TriggerFields tf = Optional.ofNullable(tr.getTriggerFields())//
 									.map(Util.sneakyF(str -> jaxbMapper.readValue(str, TriggerFields.class)))//
 									.orElse(null);
@@ -100,7 +101,7 @@ public class StreamListener implements HealthIndicator {
 					case "REMOVE": {
 						MyTableRow tr = dynamoDbMapper.marshallIntoObject(MyTableRow.class,
 								o.getDynamodb().getOldImage());
-						if (TriggersUtil.isTriggerRecord(tr)) {
+						if (MyTableRowUtil.isTriggerRecord(tr)) {
 							log.info("delete triggerId={} triggerFields={}", tr.getPK());
 							alerter.onDeleteTrigger(tr.getPK());
 						} else {
