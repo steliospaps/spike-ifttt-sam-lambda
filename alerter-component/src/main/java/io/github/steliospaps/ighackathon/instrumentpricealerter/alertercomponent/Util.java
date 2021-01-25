@@ -3,7 +3,6 @@ package io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponen
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

@@ -1,8 +1,6 @@
 package io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.instruments;
 
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.StringUtils;
@@ -10,14 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-
-import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.MyTableRow;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.events.InstrumentReceivedFromDBEvent;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.events.InstrumentReceivedFromIGEvent;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.events.SecurityListReceivedEvent;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.events.TableScannedEvent;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

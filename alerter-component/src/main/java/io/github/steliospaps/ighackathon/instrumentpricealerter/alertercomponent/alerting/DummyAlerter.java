@@ -2,7 +2,6 @@ package io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponen
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;

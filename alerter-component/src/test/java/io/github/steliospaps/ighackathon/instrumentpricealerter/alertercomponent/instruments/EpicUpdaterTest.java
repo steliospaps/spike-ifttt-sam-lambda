@@ -1,6 +1,5 @@
 package io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.instruments;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;

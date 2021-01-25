@@ -88,14 +88,12 @@ public class WebsocketClient implements HealthIndicator{
 	private Duration heartBeatInterval = Duration.ofSeconds(20);
 	private volatile boolean connected = false;
 
-	@Autowired
-	private MeterRegistry meterRegistry;
 	private Counter wsMessageCounter;
 	private final AtomicInteger wsMessageCountForLogging = new AtomicInteger(0);
 
 	@EventListener(ApplicationReadyEvent.class)
 	public void run() {
-		wsMessageCounter = meterRegistry.counter("ws-messages");
+		wsMessageCounter = Metrics.counter("ws-messages");
 
 		log.info("url={}",url);
 		log.info("username={}",username);
