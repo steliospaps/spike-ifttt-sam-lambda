@@ -29,6 +29,8 @@ import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.TriggerFields.Direction;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.events.InstrumentReceivedFromIGEvent;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.events.PriceUpdateEvent;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Metrics;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -63,7 +65,13 @@ public class PriceAlerter implements Alerter {
 	private ConcurrentMap<String, Set<Subscription>> subscriptionsByEpic = new ConcurrentHashMap<>();
 	private Set<Subscription> subscriptionsForNetDayChange = ConcurrentHashMap.newKeySet();
 	private ConcurrentMap<String, InstrumentReceivedFromIGEvent> epicCache = new ConcurrentHashMap<>();
-
+	private Counter epicPriceTriggeredCounter=Metrics.counter("alerts.epic-price.triggered.count");
+	private Counter prevDayChangeTriggeredCounter=Metrics.counter("alerts.prev-day-change.triggered.count");
+	{
+		Metrics.gauge("alerts.epic-price.subscriptions.count", subscriptionsByPK, c->c.size());
+		Metrics.gauge("alerts.prev-day-change.subscriptions.count", subscriptionsForNetDayChange, c->c.size());
+	}
+	
 	@Builder
 	@Data
 	@AllArgsConstructor
@@ -296,6 +304,7 @@ public class PriceAlerter implements Alerter {
 	@SneakyThrows
 	private void triggerNetDayChangedAlert(String pk, TriggerEvent payload) {
 		log.info("triggerNetDayChangedAlert - pk={} payload={}", pk, payload);
+		prevDayChangeTriggeredCounter.increment();
 		MyTableRow row = MyTableRowUtil.makeTriggerEventRow(pk)
 				.triggerEvent(jaxbMapper.writeValueAsString(payload))//
 				.build();
@@ -310,6 +319,7 @@ public class PriceAlerter implements Alerter {
 		// by the deletion
 		// instead of deleting
 		log.info("triggerAlert - pk={} te={}", pk, te);
+		epicPriceTriggeredCounter.increment();
 		MyTableRow toUpdate = new MyTableRow();
 		toUpdate.setPK(pk);
 		toUpdate.setSK(pk);// same for trigger entity
