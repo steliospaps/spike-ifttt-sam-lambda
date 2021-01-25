@@ -54,6 +54,7 @@ import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.events.InstrumentReceivedFromIGEvent;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.events.PriceUpdateEvent;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.events.SecurityListReceivedEvent;
+import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.events.TableScannedEvent;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -91,7 +92,8 @@ public class WebsocketClient implements HealthIndicator{
 	private Counter wsMessageCounter;
 	private final AtomicInteger wsMessageCountForLogging = new AtomicInteger(0);
 
-	@EventListener(ApplicationReadyEvent.class)
+	
+	@EventListener(TableScannedEvent.class) // start running after the state has been loaded from the DB, so that price ticks are proccesed after triggers are loaded.
 	public void run() {
 		wsMessageCounter = Metrics.counter("ws-messages");
 
