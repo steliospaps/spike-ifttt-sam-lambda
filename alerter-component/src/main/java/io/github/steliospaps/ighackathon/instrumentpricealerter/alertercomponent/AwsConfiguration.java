@@ -1,6 +1,8 @@
 package io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
@@ -14,6 +16,7 @@ import com.amazonaws.services.dynamodbv2.streamsadapter.AmazonDynamoDBStreamsAda
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
 @Configuration
@@ -63,6 +66,18 @@ public class AwsConfiguration {
 		private String endpoint;
 		@Value("${local.aws.region}")
 		private String region;
+
+		/**
+		 * This is necessary otherwise when you run it locally,
+		 * it will fail, unless you have a configured environment
+		 * @return a dummy bean
+		 */
+		@Bean
+		@Primary
+		public AWSCredentialsProvider amazonAWSCredentialsProvider() {
+			return new AWSStaticCredentialsProvider(
+					new BasicAWSCredentials("amazonAWSAccessKey", "amazonAWSSecretKey"));
+		}
 
 		@Bean
 		public EndpointConfiguration endpoint() {
