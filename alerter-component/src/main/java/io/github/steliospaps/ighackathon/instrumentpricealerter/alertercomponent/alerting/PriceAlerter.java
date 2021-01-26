@@ -163,7 +163,7 @@ public class PriceAlerter implements Alerter {
 		//this will alert on trigger added and on restart
 		//TODO: stop it from alerting on restart (load last sent alert?)
 		Disposable disposable = prevDayFlux//
-			.sampleFirst(activeInstrumentsDuration)
+			.sampleFirst(input -> Flux.interval(activeInstrumentsDuration))// emit first and then nothing for activeInstrumentsDuration
 			.distinct(orderTup -> orderTup.mapT1(order ->order.getItems()))// as long as order of items does not change we do not care
 			.log("netDayChange-"+pk)//
 			.map(Tuple2::getT1)//
