@@ -1,7 +1,9 @@
 package io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.alerting;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -9,9 +11,15 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -20,6 +28,8 @@ import org.springframework.stereotype.Component;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.alerting.prevdaychange.Orderer;
+import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.alerting.prevdaychange.Orderer.Order;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.MyTableRow;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.MyTableRowUtil;
 import io.github.steliospaps.ighackathon.instrumentpricealerter.alertercomponent.dynamodb.TriggerEvent;
@@ -38,7 +48,20 @@ import lombok.Data;
 import lombok.EqualsAndHashCode.Exclude;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.Disposable;
+import reactor.core.publisher.ConnectableFlux;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.Signal;
+import reactor.core.publisher.SignalType;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
+/**
+ * TODO: split into 3 components epicLookup, price_alert, prevDayChange
+ * @author stelios
+ *
+ */
 @Component
 @Slf4j
 @ConditionalOnProperty(name = "app.alerter.dummy.enabled", havingValue = "false", matchIfMissing = true)
@@ -62,14 +85,15 @@ public class PriceAlerter implements Alerter {
 	}
 
 	private ConcurrentMap<String, Subscription> subscriptionsByPK = new ConcurrentHashMap<>();
+	private ConcurrentMap<String, Disposable> disposablesByPK = new ConcurrentHashMap<>();
 	private ConcurrentMap<String, Set<Subscription>> subscriptionsByEpic = new ConcurrentHashMap<>();
-	private Set<Subscription> subscriptionsForNetDayChange = ConcurrentHashMap.newKeySet();
+
 	private ConcurrentMap<String, InstrumentReceivedFromIGEvent> epicCache = new ConcurrentHashMap<>();
 	private Counter epicPriceTriggeredCounter=Metrics.counter("alerts.epic-price.triggered.count");
 	private Counter prevDayChangeTriggeredCounter=Metrics.counter("alerts.prev-day-change.triggered.count");
 	{
 		Metrics.gauge("alerts.epic-price.subscriptions.count", subscriptionsByPK, c->c.size());
-		Metrics.gauge("alerts.prev-day-change.subscriptions.count", subscriptionsForNetDayChange, c->c.size());
+		Metrics.gauge("alerts.prev-day-change.subscriptions.count", disposablesByPK, c->c.size());
 	}
 	
 	@Builder
@@ -107,7 +131,7 @@ public class PriceAlerter implements Alerter {
 			log.error("invalid triggerType={}",triggerType);
 		}
 	}
-
+	
 	private void addInstrumentPriceSubscription(String pk, TriggerFields tf, boolean hasFired, TriggerType type) {
 		Subscription sub;
 		sub = Subscription.builder().epic(tf.getEpic())//
@@ -136,36 +160,54 @@ public class PriceAlerter implements Alerter {
 				.triggerType(type)//
 				.pk(pk)//
 				.build();
-		Subscription old = subscriptionsByPK.put(pk, sub);
+		//this will alert on trigger added and on restart
+		//TODO: stop it from alerting on restart (load last sent alert?)
+		Disposable disposable = prevDayFlux//
+			.sampleFirst(activeInstrumentsDuration)
+			.distinct(orderTup -> orderTup.mapT1(order ->order.getItems()))// as long as order of items does not change we do not care
+			.log("netDayChange-"+pk)//
+			.map(Tuple2::getT1)//
+			.subscribe(order->{
+				triggerNetDayChangedAlert(sub.getPk(), TriggerEvent.builder()//
+						.instrument(order.getItems().get(0).getSymbol())//
+						.instrumentName(order.getItems().get(0).getDescription())//
+						.price(order.getValues().get(0).toPlainString())//
+						.meta(Meta.builder()//
+								.id(UUID.randomUUID().toString())// TODO: come from bid/offer
+																	// id?
+								.timestamp(Instant.now().getEpochSecond()).build())
+						.build());
+			});
+		
+		Disposable old = disposablesByPK.put(pk, disposable);
 		if (old != null) {
 			log.warn("addNetDayChangeSubscription - subscription for pk={} already there. will replace", pk);
-		}
-		boolean isNew;
-		isNew = subscriptionsForNetDayChange.add(sub);
-		if (!isNew) {
-			log.warn("addNetDayChangeSubscription - subscription for pk={} on subscriptionsForNetDayChange already there. will replace",
-					pk);
+			old.dispose();
 		}
 	}
 
 	@Scheduled(cron = "${app.alerter.price.net-day-change.reset.cron}")
 	public void resetNetDayChange() {
-		log.info("resetNetDayChange");
-		subscriptionsForNetDayChange.stream().forEach(sub -> sub.getPrevDayChangeState().set(null));
+		log.info("resetNetDayChange (also called on startup)");
+		prevDayChangeStartSendingAlertsOnTicksAfter.set(LocalDateTime.now().plus(activeInstrumentsDayStartIgnoreDuration));
+		prevDayAlertPeriod.incrementAndGet();
+		log.info("resetNetDayChange - will suppress alerts until {}",prevDayChangeStartSendingAlertsOnTicksAfter.get());
 	}
 	
 	@Override
 	public void onDeleteTrigger(String pk) {
 		Subscription sub = subscriptionsByPK.remove(pk);
 		if (sub == null) {
-			log.warn("onDeleteTrigger subscription for pk={} not found", pk);
-			return;
+			Disposable disposable = disposablesByPK.remove(pk);
+			if(disposable == null) {
+				log.warn("onDeleteTrigger subscription for pk={} not found", pk);
+				return;
+			} else {
+				disposable.dispose();
+			}
 		}
 		if(sub.getTriggerType() == TriggerType.PREV_DAY_CHANGE) {
-			if (!subscriptionsForNetDayChange.remove(sub)) {
-				log.warn("onDeleteTrigger for pk={} epic={} : could not find the subscription in subscriptionsForNetDayChange."
-						+ " Will not remove anything", pk, sub.getEpic());
-			}
+			log.warn("onDeleteTrigger - found wrong triggerType will ignore: {}",sub);
 		} else {
 			Set<Subscription> set = subscriptionsByEpic.get(sub.getEpic());
 			if (set == null) {
@@ -191,48 +233,88 @@ public class PriceAlerter implements Alerter {
 		subscriptionsByEpic.getOrDefault(tick.getEpic(), Set.of())//
 				.stream()//
 				.forEach(sub ->handleEpicPriceTrigger(tick, sub));
-		subscriptionsForNetDayChange.stream()//
-		.forEach(sub -> handleDayChangedTrigger(tick, sub));
-
-	}
-
-	private void handleDayChangedTrigger(PriceUpdateEvent tick, Subscription sub) {
-		//TODO: optimize for cost: Update a single record and have all the triggers check it
-		if(hasNotBeenTriggeredBefore(sub) // first check
-				|| (netDayChangeShouldFire(tick, sub) 
-						&& notSentThisEpicLast(tick, sub) 
-						)) {
-			
-			//TODO: make this trigger specific type
-			Optional<InstrumentReceivedFromIGEvent> instr = Optional
-					.ofNullable(epicCache.get(tick.getEpic()));
-			if(!instr.isPresent()){
-				log.warn("handleDayChangedTrigger - could not find instrument for epic {}",tick.getEpic());
-			}
-			triggerNetDayChangedAlert(sub.getPk(), TriggerEvent.builder()//
-							.instrument(instr.map(i -> i.getSymbol()).orElse("[N/A]"))//
-							.instrumentName(instr.map(i -> i.getDescription()).orElse("[N/A]"))//
-							.price(tick.getNetChgPrevDay().toPlainString())//
-							.meta(Meta.builder()//
-									.id(UUID.randomUUID().toString())// TODO: come from bid/offer
-																		// id?
-									.timestamp(Instant.now().getEpochSecond()).build())
-							.build());
-			sub.getPrevDayChangeState().set(PrevDayChangeState.builder()//
-					.epicSent(tick.getEpic())//
-					.prevDayChangeSentValue(tick.getNetChgPrevDay())//
-					.build());
-		}
 		
+		FluxSink<PriceUpdateEvent> fluxSink = fluxSinkRef.get();
+		if(fluxSink==null) {
+			log.error("fluxSink is null");
+		} else {
+			fluxSink.next(tick);
+		}
+
 	}
 
-	private boolean notSentThisEpicLast(PriceUpdateEvent tick, Subscription sub) {
-		return !tick.getEpic().equals(sub.getPrevDayChangeState().get().getEpicSent());
+	private AtomicReference<FluxSink<PriceUpdateEvent>> fluxSinkRef=new AtomicReference<>();
+	/**
+	 * flux of (instrument,alertPeriod)
+	 * alertPeriod is a monotonically increasing number so that we can send the same instrument
+	 * on different days (instrument same, period different) when we are using Discreet
+	 */
+	private Flux<Tuple2<Order<InstrumentReceivedFromIGEvent>, Integer>> prevDayFlux;
+	private Disposable prevDayFluxDisposable; 
+	//used to define alerting periods. On reset the busines period changed and the leaderboard resets
+	private AtomicInteger prevDayAlertPeriod=new AtomicInteger(); 
+	private AtomicReference<LocalDateTime> prevDayChangeStartSendingAlertsOnTicksAfter=new AtomicReference<>();
+	
+	@Value("${app.alerter.price.net-day-change.max-instruments-count}")
+	private int activeInstrumentsCount;
+	//sample the alerts so as to not alert more frequently than this
+	@Value("${app.alerter.price.net-day-change.alert-inteval}")
+	private Duration activeInstrumentsDuration;
+	//on period start mute alerts for so long
+	@Value("${app.alerter.price.net-day-change.day-start-inteval}")
+	private Duration activeInstrumentsDayStartIgnoreDuration;
+	
+	@PreDestroy
+	private void destroyPrevDayChangedFlux() {
+		prevDayFluxDisposable.dispose();
+	}
+	
+	@PostConstruct
+	private void initialisePrevDayChangedFlux() {
+		resetNetDayChange();
+		
+		Orderer<InstrumentReceivedFromIGEvent> orderer = 
+				new Orderer<InstrumentReceivedFromIGEvent>((a,b)->a.abs().compareTo(b.abs()));
+		
+		ConnectableFlux<Tuple2<Order<InstrumentReceivedFromIGEvent>, Integer>> connectable = 
+				Flux.<PriceUpdateEvent>create(fluxSink -> {
+			if(!fluxSinkRef.compareAndSet(null, fluxSink)) {
+				log.error("I expected the fluxSink to not be set, but it is");
+			}
+		})//
+		.map(tick->enrichWithInstrument(tick))
+		.scan(Tuples.of(new Orderer.Order<InstrumentReceivedFromIGEvent>(),prevDayAlertPeriod.get()), //
+				(orderTup,tup2)-> {
+					int currentPeriod = prevDayAlertPeriod.get();
+					if(orderTup.getT2() == currentPeriod) {
+						return Tuples.of(orderer.tick(orderTup.getT1(), tup2.getT1(), tup2.getT2()),orderTup.getT2());
+					} else {
+						log.info("reseting prevDayChange (in scan)");
+						return Tuples.of(orderer.tick(new Orderer.Order<InstrumentReceivedFromIGEvent>(), 
+								tup2.getT1(), tup2.getT2()),currentPeriod);
+					}
+				})//
+		.map(orderTup -> orderTup.mapT1(o -> o.limitSizeTo(activeInstrumentsCount)))//
+		.filter(ignored -> LocalDateTime.now().isAfter(prevDayChangeStartSendingAlertsOnTicksAfter.get()))
+		.log("prevDayFlux",Level.INFO, SignalType.AFTER_TERMINATE,SignalType.CANCEL,SignalType.ON_COMPLETE,
+				SignalType.ON_ERROR,SignalType.ON_SUBSCRIBE,SignalType.SUBSCRIBE)
+		.publish();
+		
+		prevDayFlux=connectable.cache(1);
+		prevDayFluxDisposable = connectable.connect();
 	}
 
-	private boolean netDayChangeShouldFire(PriceUpdateEvent tick, Subscription sub) {
-		return tick.getNetChgPrevDay().abs().compareTo(
-				sub.getPrevDayChangeState().get().getPrevDayChangeSentValue().abs())>0;
+	private Tuple2<InstrumentReceivedFromIGEvent, BigDecimal> enrichWithInstrument(PriceUpdateEvent tick) {
+		InstrumentReceivedFromIGEvent instrument = epicCache.get(tick.getEpic());
+		if(instrument==null) {
+			log.error("could not find instrument {} will use dummy",tick.getEpic());
+			instrument = InstrumentReceivedFromIGEvent.builder()//
+					.epic(tick.getEpic())//
+					.symbol("[N/A]")//
+					.description("[N/A]")//
+					.build();
+		}
+		return Tuples.of(instrument, tick.getNetChgPrevDay());
 	}
 
 	/**
