@@ -103,9 +103,12 @@ public class WebsocketClient implements HealthIndicator{
 		disposable = Flux.interval(retryConnectionInterval)//reconnect that often
 			.startWith(-1L)
 			.onBackpressureDrop()//otherwise it will blow up
-			.flatMap(ignore-> client.execute(url, ws ->handleWs(ws)),//
+			.flatMap(ignore-> client.execute(url, ws ->handleWs(ws))//
+					.onErrorResume(t-> {
+						log.error("will retry to connect", t);
+						return Mono.empty();
+					}),//
 					1)//how many concurrent connections
-			.onErrorContinue((t, o)-> log.error("will retry to connect", t))//
 			.take(resetConnectionInterval)//disconnect every 8 hours (and resubscribe)
 			.log("ws",Level.INFO,SignalType.ON_SUBSCRIBE,SignalType.CANCEL,SignalType.ON_COMPLETE,SignalType.ON_ERROR,SignalType.AFTER_TERMINATE)
 			.subscribe();

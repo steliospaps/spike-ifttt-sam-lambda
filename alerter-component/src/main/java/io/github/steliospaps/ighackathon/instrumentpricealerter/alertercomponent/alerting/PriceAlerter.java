@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -164,19 +166,21 @@ public class PriceAlerter implements Alerter {
 		//TODO: stop it from alerting on restart (load last sent alert?)
 		Disposable disposable = prevDayFlux//
 			.sampleFirst(input -> Flux.interval(activeInstrumentsDuration))// emit first and then nothing for activeInstrumentsDuration
-			.distinct(orderTup -> orderTup.mapT1(order ->order.getItems()))// as long as order of items does not change we do not care
+			.distinct(orderTup -> orderTup.mapT1(order ->new HashSet<>(order.getItems())))// as long as order of items does not change we do not care
 			.log("netDayChange-"+pk)//
 			.map(Tuple2::getT1)//
 			.subscribe(order->{
-				triggerNetDayChangedAlert(sub.getPk(), TriggerEvent.builder()//
-						.instrument(order.getItems().get(0).getSymbol())//
-						.instrumentName(order.getItems().get(0).getDescription())//
-						.price(order.getValues().get(0).toPlainString())//
+				for(int i=0;i<order.getItems().size();i++) {
+					triggerNetDayChangedAlert(sub.getPk(), TriggerEvent.builder()//
+						.instrument(order.getItems().get(i).getSymbol())//
+						.instrumentName(order.getItems().get(i).getDescription())//
+						.price(order.getValues().get(i).toPlainString())//
 						.meta(Meta.builder()//
-								.id(UUID.randomUUID().toString())// TODO: come from bid/offer
-																	// id?
+								//make a predictable id so that we do not alert more than once a day for an epic
+								.id(LocalDate.now()+"-"+order.getItems().get(i).getSymbol())
 								.timestamp(Instant.now().getEpochSecond()).build())
 						.build());
+				}
 			});
 		
 		Disposable old = disposablesByPK.put(pk, disposable);
